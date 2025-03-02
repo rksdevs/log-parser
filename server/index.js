@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import bodyParser from "body-parser";
 import getPresignedUrl from "./routes/uploadToBBRoute.js";
+import uploadMetadata from "./routes/logsMetadataRoute.js";
 
 dotenv.config();
 const app = express();
@@ -24,6 +25,7 @@ app.get("/", (req, res) => {
 
 //Routes
 app.use("/api", getPresignedUrl);
+app.use("/api/logs", uploadMetadata);
 
 const port = process.env.PORT || 8800;
 app.listen(port, () => {
