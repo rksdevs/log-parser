@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { toast } from "sonner";
 
 import { LogsMetadata } from "@/types";
 
@@ -28,9 +29,16 @@ export function Upload({
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [enableUpload, setEnableUpload] = useState<boolean>(false);
   const [serverName, setServerName] = useState<string>("");
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
+      // ✅ Enforce .zip file uploads
+      if (!e.target.files[0].name.endsWith(".zip")) {
+        setEnableUpload(false);
+        toast("Please upload a .zip file only!");
+        return;
+      }
       setSelectedFile(e.target.files[0]);
     }
   };
@@ -107,11 +115,13 @@ export function Upload({
     } catch (error) {
       console.error("Upload failed:", error);
     }
+    setSelectedFile(null);
+    setServerName("");
+    setEnableUpload(false);
   };
   useEffect(() => {
-    console.log(selectedFile);
-    // console.log(preSignedUrl);
-  }, [selectedFile]);
+    if (selectedFile && serverName) setEnableUpload(true);
+  }, [selectedFile, serverName]);
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -156,7 +166,7 @@ export function Upload({
                 </Select>
               </div>
 
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={!enableUpload}>
                 Upload
               </Button>
             </div>

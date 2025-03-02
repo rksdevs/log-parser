@@ -60,7 +60,20 @@ async function getPresignedUrl(req, res) {
 
 async function getPresignedUrlS3(req, res) {
   try {
-    const { fileName, fileType } = req.body;
+    let { fileName, fileType } = req.body;
+
+    const allowedZipTypes = ["application/zip", "application/x-zip-compressed"];
+    if (!allowedZipTypes.includes(fileType)) {
+      return res.status(400).json({ error: "❌ Only .zip files are allowed!" });
+    }
+
+    fileType = "application/zip";
+
+    //Enforce .zip file validation
+    if (!fileName.endsWith(".zip") || fileType !== "application/zip") {
+      return res.status(400).json({ error: "Only .zip files are allowed!" });
+    }
+
     const newFileName = `${uuidv4()}-${fileName}`;
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
@@ -72,6 +85,7 @@ async function getPresignedUrlS3(req, res) {
     const signedUrl = await s3.getSignedUrlPromise("putObject", params);
     res.json({ uploadUrl: signedUrl, newFileName });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Failed to generate URL" });
   }
 }
