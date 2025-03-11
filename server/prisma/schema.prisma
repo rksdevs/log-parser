@@ -26,13 +26,15 @@ enum ProcessingStatus {
 }
 
 model Logs {
-  logId            Int              @id @default(autoincrement())
-  fileName         String
-  s3FilePath       String
-  serverName       String
-  uploadTimestamp  DateTime         @default(now())
-  fileSize         Int
-  fileType         String
-  uploadStatus     UploadStatus
-  processingStatus ProcessingStatus
+  logId              Int              @id @default(autoincrement())
+  fileName           String
+  s3FilePath         String
+  serverName         String
+  uploadTimestamp    DateTime         @default(now())
+  fileSize           Int
+  fileType           String
+  uploadStatus       UploadStatus
+  processingStatus   ProcessingStatus
+  structuredDataPath String?
+  processedAt        DateTime?
 }

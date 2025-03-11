@@ -44,7 +44,7 @@ const uploadMetadata = async (req, res) => {
     });
 
     //Add a log to the bullmq queue
-    await logQueue.add("processLog", {
+    await logQueue.add("log-processing-queue", {
       logId: newLog.logId,
       s3FilePath: newLog.s3FilePath,
     });

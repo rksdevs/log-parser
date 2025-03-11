@@ -7,6 +7,7 @@ import path from "path";
 import { PrismaClient } from "@prisma/client";
 import { fileURLToPath } from "url";
 import AdmZip from "adm-zip";
+import { processLogFile } from "../parsers/logParser.js";
 
 dotenv.config();
 const prisma = new PrismaClient();
@@ -21,6 +22,23 @@ const s3 = new AWS.S3({
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Saves structured log data to Redis
+ * @param {String} userId - User ID
+ * @param {String} logId - Unique log ID
+ * @param {Object} fightsData - Structured fights object
+ */
+async function saveToRedis(userId, logId, fightsData) {
+  try {
+    const key = `log:${userId}:${logId}`;
+    await redisConnection.setex(key, 3600, JSON.stringify(fightsData)); // Expires in 1 hour
+    await redisConnection.set(`log:${userId}:latest`, logId);
+    console.log(`✅ Log saved in Redis: ${key}`);
+  } catch (error) {
+    console.error("❌ Redis save error:", error);
+  }
+}
+
 const logWorker = new Worker(
   "log-processing-queue",
   async (job) => {
@@ -28,6 +46,7 @@ const logWorker = new Worker(
       const { logId, s3FilePath } = job.data;
       console.log(`🚀 Processing log (ID: ${logId})...`);
       console.log(`🔍 Fetching file from S3: ${s3FilePath}`);
+      const userId = "12345";
 
       const urlObj = new URL(s3FilePath);
       const s3ObjectKey = urlObj.pathname.substring(1);
@@ -79,13 +98,35 @@ const logWorker = new Worker(
         if (fileName.endsWith(".txt")) {
           console.log(`📑 Processing extracted file: ${fileName}`);
 
-          // ✅ Read file content
-          const fileContent = fs.readFileSync(filePath, "utf-8");
+          // ✅ Parse the log file and structure encounters
+          const structuredFights = await processLogFile(filePath, logId);
 
-          // ✅ Simulate log parsing (Replace with real parsing logic)
-          console.log(
-            `🔍 First 100 chars of file: ${fileContent.substring(0, 100)}`
-          );
+          console.log(`✅ Log parsing completed for log ID: ${logId}`);
+
+          if (structuredFights) {
+            console.log(`🔹 Storing log in Redis for quick access...`);
+
+            console.log(logId);
+            await saveToRedis(userId, logId, structuredFights);
+          }
+
+          // ✅ Save structured fights to PostgreSQL (Optional, add DB integration here)
+          // await prisma.logs.update({
+          //   where: { logId },
+          //   data: {
+          //     processingStatus: "completed",
+          //     structuredDataPath: `logs/json/log-${logId}.json`, // Store structured log path
+          //   },
+          // });
+
+          await prisma.logs.update({
+            where: { logId },
+            data: {
+              processingStatus: "completed",
+              structuredDataPath: `logs/json/log-${logId}.json`, // Store structured log path
+              processedAt: new Date(), // Timestamp for completion
+            },
+          });
         } else {
           throw new Error(
             `❌ Invalid file detected: ${fileName}. Only .txt or .log files are allowed.`

@@ -5,6 +5,8 @@ import morgan from "morgan";
 import bodyParser from "body-parser";
 import getPresignedUrl from "./routes/uploadToBBRoute.js";
 import uploadMetadata from "./routes/logsMetadataRoute.js";
+import getLogs from "./routes/logsRetrieveRoute.js";
+import logRoutes from "./routes/logRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -26,6 +28,8 @@ app.get("/", (req, res) => {
 //Routes
 app.use("/api", getPresignedUrl);
 app.use("/api/logs", uploadMetadata);
+app.use("/api/get-logs", getLogs);
+app.use("/api", logRoutes);
 
 const port = process.env.PORT || 8800;
 app.listen(port, () => {

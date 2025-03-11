@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { headers } from "next/headers";
+// import { headers } from "next/headers";
 import {
   Select,
   SelectContent,
@@ -23,14 +23,18 @@ import {
 import { toast } from "sonner";
 
 import { LogsMetadata } from "@/types";
+import { useRouter } from "next/navigation";
 
 export function Upload({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+  const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [enableUpload, setEnableUpload] = useState<boolean>(false);
   const [serverName, setServerName] = useState<string>("");
+  const [logId, setLogId] = useState<string>("");
+  const [status, setStatus] = useState<string>("processing");
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       // ✅ Enforce .zip file uploads
@@ -62,6 +66,10 @@ export function Upload({
   //   }
   // };
 
+  const handleNavigation = (logId: string) => {
+    router.push(`/logs/${logId}`);
+  };
+
   const handleUploadMetadata = async (metadata: LogsMetadata) => {
     try {
       const response = await axios.post(
@@ -70,6 +78,7 @@ export function Upload({
         { headers: { "Content-Type": "application/json" } }
       );
       console.log(response.data);
+      setLogId(response?.data?.log.logId);
     } catch (error) {
       console.error(error);
     }
@@ -112,6 +121,10 @@ export function Upload({
         fileSize: selectedFile?.size,
         fileType: selectedFile?.type,
       });
+
+      setSelectedFile(null);
+      setServerName("");
+      setEnableUpload(false);
     } catch (error) {
       console.error("Upload failed:", error);
     }
@@ -122,6 +135,30 @@ export function Upload({
   useEffect(() => {
     if (selectedFile && serverName) setEnableUpload(true);
   }, [selectedFile, serverName]);
+
+  // useEffect(() => {
+  //   if (logId) handleNavigation(logId);
+  // }, [logId]);
+
+  useEffect(() => {
+    if (!logId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:8000/api/logs/status/${logId}`
+        );
+        if (res.data.status === "completed") {
+          setStatus("completed");
+          clearInterval(interval);
+        }
+      } catch (error) {
+        console.error("Error fetching log status:", error);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [logId]);
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -169,6 +206,16 @@ export function Upload({
               <Button type="submit" className="w-full" disabled={!enableUpload}>
                 Upload
               </Button>
+              <h2>Log Processing Status: {status}</h2>
+              {status === "completed" && (
+                <Button
+                  className="w-full"
+                  disabled={status !== "completed"}
+                  onClick={() => handleNavigation(logId)}
+                >
+                  View Log
+                </Button>
+              )}
             </div>
           </form>
         </CardContent>
