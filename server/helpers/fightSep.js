@@ -10,6 +10,7 @@ import { getBossName } from "../helpers/bossHelper.js";
  * @returns {Object} - List of structured attempts, grouped by boss.
  */
 function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
+  //logLines have {timestamp, eventType, sourceGUID, targetGUID,sourceName,targetName, spellId, spellName,raw: line} = logLines
   const bossAttempts = {};
   let currentAttempt = {};
   let lastTimestamp = {};
@@ -103,17 +104,17 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
 //       spellName,
 //     } = log;
 
-//     // ✅ Ensure the player exists in this attempt
+//     //  Ensure the player exists in this attempt
 //     if (sourceName && !attemptPlayers[sourceName]) {
 //       attemptPlayers[sourceName] = {
 //         class: playerStats[sourceName]?.class || "Unknown",
-//         damage: 0, // ✅ Ensure initialized
-//         healing: 0, // ✅ Ensure initialized
+//         damage: 0, //  Ensure initialized
+//         healing: 0, //  Ensure initialized
 //         pets: {},
 //       };
 //     }
 
-//     // ✅ Track Player Damage
+//     //  Track Player Damage
 //     if (sourceName && eventType.includes("DAMAGE")) {
 //       //swing damage
 
@@ -121,38 +122,38 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
 // (eventType.trim() === "SWING_DAMAGE"
 //   ? parseInt(log.raw.split(",")[7])
 //   : parseInt(log.raw.split(",")[10])) || 0;
-//       attemptPlayers[sourceName].damage += damageAmount; // ✅ No more undefined errors
+//       attemptPlayers[sourceName].damage += damageAmount; //  No more undefined errors
 //     }
 
-//     // ✅ Track Healing
+//     //  Track Healing
 //     if (sourceName && eventType.includes("HEAL")) {
 //       const healingAmount = parseInt(log.raw.split(",")[10]) || 0;
-//       attemptPlayers[sourceName].healing += healingAmount; // ✅ No more undefined errors
+//       attemptPlayers[sourceName].healing += healingAmount; //  No more undefined errors
 //     }
 
-//     // ✅ Handle Pets
+//     //  Handle Pets
 //     if (sourceGUID && petOwners[sourceGUID]) {
 //       const ownerGUID = petOwners[sourceGUID];
 //       const ownerName = allGuids[ownerGUID]?.name;
 //       const petName = allGuids[sourceGUID]?.name || "Unknown Pet";
 
 //       if (ownerName) {
-//         // ✅ Ensure Owner is Tracked
+//         //  Ensure Owner is Tracked
 //         if (!attemptPlayers[ownerName]) {
 //           attemptPlayers[ownerName] = {
 //             class: playerStats[ownerName]?.class || "Unknown",
-//             damage: 0, // ✅ Ensure initialized
-//             healing: 0, // ✅ Ensure initialized
+//             damage: 0, //  Ensure initialized
+//             healing: 0, //  Ensure initialized
 //             pets: {},
 //           };
 //         }
 
-//         // ✅ Ensure Pet is Tracked
+//         //  Ensure Pet is Tracked
 //         if (!attemptPlayers[ownerName].pets[petName]) {
 //           attemptPlayers[ownerName].pets[petName] = { damage: 0, healing: 0 };
 //         }
 
-//         // ✅ Track Pet Damage
+//         //  Track Pet Damage
 //         if (eventType.includes("DAMAGE")) {
 //           const petDamageAmount =
 //             (eventType.trim() === "SWING_DAMAGE"
@@ -161,7 +162,7 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
 //           attemptPlayers[ownerName].pets[petName].damage += petDamageAmount;
 //         }
 
-//         // ✅ Track Pet Healing
+//         //  Track Pet Healing
 //         if (eventType.includes("HEAL")) {
 //           const petHealingAmount = parseInt(log.raw.split(",")[10]) || 0;
 //           attemptPlayers[ownerName].pets[petName].healing += petHealingAmount;
@@ -182,7 +183,7 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
 //       spellId: log.spellId,
 //       spellName: log.spellName,
 //     })),
-//     players: attemptPlayers, // ✅ Players with per-attempt stats
+//     players: attemptPlayers, //  Players with per-attempt stats
 //   };
 // }
 
@@ -199,48 +200,48 @@ function processAttempt(
   const endTime = attemptLogs[attemptLogs.length - 1].timestamp;
 
   const attemptPlayers = {}; // Stores per-player stats
-  let overallDamage = 0; // ✅ Tracks total damage across all actors
-  let damageByPlayer = {}; // ✅ Tracks damage by players (excluding pets)
+  let overallDamage = 0; //  Tracks total damage across all actors
+  let damageByPlayer = {}; //  Tracks damage by players (excluding pets)
 
   for (const log of attemptLogs) {
     const { sourceGUID, sourceName, eventType, raw } = log;
 
-    // ✅ Ensure player is initialized
+    //  Ensure player is initialized
     if (sourceName && !attemptPlayers[sourceName]) {
       attemptPlayers[sourceName] = {
         class: playerStats[sourceName]?.class || "Unknown",
-        playerDamage: 0, // ✅ Only player’s direct damage
-        playerTotalDamage: 0, // ✅ Player’s direct + pet damage
+        playerDamage: 0, //  Only player’s direct damage
+        playerTotalDamage: 0, //  Player’s direct + pet damage
         healing: 0,
         pets: {},
       };
     }
 
-    // ✅ Track Player Damage (Direct)
+    //  Track Player Damage (Direct)
     if (sourceName && eventType.includes("DAMAGE")) {
       // const damageAmount = parseInt(raw.split(",")[10]) || 0;
       const damageAmount =
         (eventType.trim() === "SWING_DAMAGE"
           ? parseInt(raw.split(",")[7])
           : parseInt(raw.split(",")[10])) || 0;
-      attemptPlayers[sourceName].playerDamage += damageAmount; // ✅ Only player's damage
-      attemptPlayers[sourceName].playerTotalDamage += damageAmount; // ✅ Player + pet damage
-      overallDamage += damageAmount; // ✅ Add to total fight damage
+      attemptPlayers[sourceName].playerDamage += damageAmount; //  Only player's damage
+      attemptPlayers[sourceName].playerTotalDamage += damageAmount; //  Player + pet damage
+      overallDamage += damageAmount; //  Add to total fight damage
 
-      // ✅ Store in `damageByPlayer`
+      //  Store in `damageByPlayer`
       if (!damageByPlayer[sourceName]) {
         damageByPlayer[sourceName] = 0;
       }
       damageByPlayer[sourceName] += damageAmount;
     }
 
-    // ✅ Track Healing
+    //  Track Healing
     if (sourceName && eventType.includes("HEAL")) {
       const healingAmount = parseInt(raw.split(",")[10]) || 0;
       attemptPlayers[sourceName].healing += healingAmount;
     }
 
-    // ✅ Handle Pets
+    //  Handle Pets
     if (sourceGUID && petOwners[sourceGUID]) {
       const ownerGUID = petOwners[sourceGUID];
       const ownerName = allGuids[ownerGUID]?.name;
@@ -261,7 +262,7 @@ function processAttempt(
           attemptPlayers[ownerName].pets[petName] = { damage: 0, healing: 0 };
         }
 
-        // ✅ Track Pet Damage
+        //  Track Pet Damage
         if (eventType.includes("DAMAGE")) {
           //   const petDamageAmount = parseInt(raw.split(",")[10]) || 0;
           const petDamageAmount =
@@ -269,8 +270,8 @@ function processAttempt(
               ? parseInt(raw.split(",")[7])
               : parseInt(raw.split(",")[10])) || 0;
           attemptPlayers[ownerName].pets[petName].damage += petDamageAmount;
-          attemptPlayers[ownerName].playerTotalDamage += petDamageAmount; // ✅ Add pet’s damage to player's total
-          overallDamage += petDamageAmount; // ✅ Include in total fight damage
+          attemptPlayers[ownerName].playerTotalDamage += petDamageAmount; //  Add pet’s damage to player's total
+          overallDamage += petDamageAmount; //  Include in total fight damage
         }
       }
     }
@@ -280,8 +281,8 @@ function processAttempt(
     boss: bossName,
     startTime,
     endTime,
-    overallDamage, // ✅ Total damage in this attempt
-    damageByPlayer, // ✅ Breakdown of only player’s direct damage
+    overallDamage, //  Total damage in this attempt
+    damageByPlayer, //  Breakdown of only player’s direct damage
     logs: attemptLogs.map((log) => ({
       timestamp: log.timestamp,
       eventType: log.eventType,
@@ -290,7 +291,7 @@ function processAttempt(
       spellId: log.spellId,
       spellName: log.spellName,
     })),
-    players: attemptPlayers, // ✅ Players with separated damage stats
+    players: attemptPlayers, //  Players with separated damage stats
   };
 }
 

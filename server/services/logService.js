@@ -13,7 +13,7 @@ export async function getLogFromRedis(userId, logId) {
     const logData = await redisConnection.get(key);
     return logData ? JSON.parse(logData) : null;
   } catch (error) {
-    console.error("❌ Redis fetch error:", error);
+    console.error(" Redis fetch error:", error);
     return null;
   }
 }

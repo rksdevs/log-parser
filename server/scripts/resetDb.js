@@ -4,17 +4,25 @@ const prisma = new PrismaClient();
 
 async function resetLogs() {
   try {
-    console.log("🚀 Resetting Logs table...");
+    console.log("🔹 Resetting dependent tables...");
 
-    // Delete all log entries
-    await prisma.logs.deleteMany();
+    // 1️⃣ Delete all dependent records first
+    await prisma.spellStatistic.deleteMany({});
+    await prisma.log.deleteMany({});
+    await prisma.attemptParticipant.deleteMany({});
+    await prisma.attempt.deleteMany({});
+    await prisma.boss.deleteMany({});
+    await prisma.encounter.deleteMany({});
+    await prisma.player.deleteMany({});
 
-    // Reset logId sequence
-    await prisma.$executeRaw`ALTER SEQUENCE "Logs_logId_seq" RESTART WITH 1;`;
+    console.log("✅ Dependent tables reset.");
 
-    console.log("✅ Logs table reset successfully!");
+    // 2️⃣ Now, safely delete logs
+    console.log("🔹 Resetting Logs table...");
+    await prisma.logs.deleteMany({});
+    console.log("✅ Logs table reset.");
   } catch (error) {
-    console.error("❌ Error resetting logs table:", error);
+    console.error(" Error resetting logs table:", error);
   } finally {
     await prisma.$disconnect();
   }

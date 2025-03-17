@@ -1,8 +1,12 @@
 import express from "express";
-import { getLogStatus } from "../controllers/logStatusController.js";
+import {
+  getLogStatusPostgres,
+  getLogStatusRedis,
+} from "../controllers/logStatusController.js";
 
 const router = express.Router();
 
-router.get("/logs/status/:logId", getLogStatus);
+router.get("/redis/status/:logId", getLogStatusRedis);
+router.get("/postgres/status/:logId", getLogStatusPostgres);
 
 export default router;

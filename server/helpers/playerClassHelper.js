@@ -1,4 +1,4 @@
-// ✅ Mapping of spell IDs to class indexes
+//  Mapping of spell IDs to class indexes
 const SPELL_BOOK = {
   // Death Knight
   49222: "Death Knight",

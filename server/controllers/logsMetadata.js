@@ -20,10 +20,10 @@ const uploadMetadata = async (req, res) => {
       throw new Error("Missing file metadata to upload!");
     }
 
-    // ✅ Normalize ZIP MIME types
+    //  Normalize ZIP MIME types
     const allowedZipTypes = ["application/zip", "application/x-zip-compressed"];
     if (!allowedZipTypes.includes(fileType)) {
-      return res.status(400).json({ error: "❌ Only .zip files are allowed!" });
+      return res.status(400).json({ error: " Only .zip files are allowed!" });
     }
 
     fileType = "application/zip";

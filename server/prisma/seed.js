@@ -40,12 +40,12 @@ async function main() {
     ],
   });
 
-  console.log("✅ Database seeded successfully!");
+  console.log(" Database seeded successfully!");
 }
 
 main()
   .catch((error) => {
-    console.error("❌ Error seeding database:", error);
+    console.error(" Error seeding database:", error);
     process.exit(1);
   })
   .finally(async () => {

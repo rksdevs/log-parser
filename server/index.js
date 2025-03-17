@@ -6,7 +6,11 @@ import bodyParser from "body-parser";
 import getPresignedUrl from "./routes/uploadToBBRoute.js";
 import uploadMetadata from "./routes/logsMetadataRoute.js";
 import getLogs from "./routes/logsRetrieveRoute.js";
-import logRoutes from "./routes/logRoutes.js";
+import logStatusRoutes from "./routes/logRoutes.js";
+import encounterRoutes from "./routes/encountersRoute.js";
+import attemptRoutes from "./routes/attemptsRoute.js";
+import playerRoutes from "./routes/playersRoute.js";
+import spellRoutes from "./routes/spellsRoute.js";
 
 dotenv.config();
 const app = express();
@@ -27,9 +31,17 @@ app.get("/", (req, res) => {
 
 //Routes
 app.use("/api", getPresignedUrl);
-app.use("/api/logs", uploadMetadata);
-app.use("/api/get-logs", getLogs);
-app.use("/api", logRoutes);
+app.use("/api/upload-logs", uploadMetadata);
+app.use("/api/logs", getLogs);
+app.use("/api/logs", logStatusRoutes);
+// app.use("/api/encounters", encounterRoutes);
+// app.use("/api/attempts", attemptRoutes);
+// app.use("/api/players", playerRoutes);
+// app.use("/api/spells", spellRoutes);
+app.use("/api/logs", attemptRoutes);
+app.use("/api/logs", playerRoutes);
+app.use("/api/logs", spellRoutes);
+app.use("/api/logs", encounterRoutes);
 
 const port = process.env.PORT || 8800;
 app.listen(port, () => {

@@ -37,4 +37,84 @@ model Logs {
   processingStatus   ProcessingStatus
   structuredDataPath String?
   processedAt        DateTime?
+  dbUploadCompleteAt DateTime?
+  // New relationship to encounters
+  encounters         Encounter[]
+}
+
+// New Tables for Storing Structured Data
+
+model Encounter {
+  id        Int      @id @default(autoincrement())
+  log       Logs     @relation(fields: [logId], references: [logId])
+  logId     Int
+  name      String
+  bosses    Boss[]
+  createdAt DateTime @default(now())
+}
+
+model Boss {
+  id          Int       @id @default(autoincrement())
+  name        String
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+  encounterId Int
+  attempts    Attempt[]
+}
+
+model Attempt {
+  id           Int                  @id @default(autoincrement())
+  boss         Boss                 @relation(fields: [bossId], references: [id])
+  bossId       Int
+  startTime    DateTime
+  endTime      DateTime
+  totalDamage  Int
+  totalHealing Int
+  players      AttemptParticipant[]
+  logs         Log[]
+  spellStats   SpellStatistic[]
+}
+
+model Player {
+  id             Int                  @id @default(autoincrement())
+  name           String               @unique
+  class          String?
+  attempts       AttemptParticipant[]
+  SpellStatistic SpellStatistic[]
+}
+
+model AttemptParticipant {
+  id          Int     @id @default(autoincrement())
+  attempt     Attempt @relation(fields: [attemptId], references: [id])
+  attemptId   Int
+  player      Player  @relation(fields: [playerId], references: [id])
+  playerId    Int
+  damageDone  Int     @default(0)
+  healingDone Int     @default(0)
+}
+
+model Log {
+  id         Int      @id @default(autoincrement())
+  attempt    Attempt  @relation(fields: [attemptId], references: [id])
+  attemptId  Int
+  timestamp  DateTime
+  eventType  String
+  sourceGUID String?
+  targetGUID String?
+  spellId    Int?
+  spellName  String?
+}
+
+model SpellStatistic {
+  id           Int     @id @default(autoincrement())
+  attempt      Attempt @relation(fields: [attemptId], references: [id])
+  attemptId    Int
+  player       Player  @relation(fields: [playerId], references: [id])
+  playerId     Int
+  spellId      Int
+  spellName    String
+  totalDamage  Int     @default(0)
+  totalCasts   Int     @default(0)
+  normalHits   Int     @default(0)
+  criticalHits Int     @default(0)
+  periodicHits Int     @default(0)
 }

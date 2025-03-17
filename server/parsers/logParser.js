@@ -3,19 +3,18 @@ import readline from "readline";
 import path from "path";
 import { fileURLToPath } from "url";
 import { getBossName, getMultiBossName } from "../helpers/bossHelper.js";
-// import { splitToAttempts } from "../helpers/fightSeparator.js";
 import { splitToAttempts } from "../helpers/fightSep.js";
 import { getPlayerClassFromSpell } from "../helpers/playerClassHelper.js";
 import { PET_SPELLS } from "../helpers/petHelpers.js";
 
-// ✅ Fix __dirname for ES Modules
+//  Fix __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function processLogFile(filePath, logId) {
-  console.log(`🚀 Streaming log file: ${filePath}`);
+  console.log(` Streaming log file: ${filePath}`);
 
-  // ✅ Stream the file for efficiency
+  //  Stream the file for efficiency
   const logStream = fs.createReadStream(filePath);
   const rl = readline.createInterface({ input: logStream });
 
@@ -40,13 +39,13 @@ async function processLogFile(filePath, logId) {
   for await (const line of rl) {
     if (!line.trim()) continue; // Skip empty lines
 
-    // ✅ Extract timestamp and event data
+    //  Extract timestamp and event data
     const firstSpaceIndex = line.indexOf(" ");
     const secondSpaceIndex = line.indexOf(" ", firstSpaceIndex + 1);
     const timestamp = line.substring(0, secondSpaceIndex);
     const eventData = line.substring(secondSpaceIndex + 1);
 
-    // ✅ Split the remaining line by comma
+    //  Split the remaining line by comma
     const parts = eventData.split(",");
     if (parts.length < 5) continue; // Ensure valid log format
 
@@ -59,11 +58,11 @@ async function processLogFile(filePath, logId) {
     const spellName = parts[8]?.replace(/"/g, "") || null;
     console.log(eventType);
 
-    // ✅ Store GUIDs
+    //  Store GUIDs
     if (!ALL_GUIDS[sourceGUID]) ALL_GUIDS[sourceGUID] = { name: sourceName };
     if (!ALL_GUIDS[targetGUID]) ALL_GUIDS[targetGUID] = { name: targetName };
 
-    // ✅ Detect Summoned Pets
+    //  Detect Summoned Pets
     if (eventType.trim() === "SPELL_SUMMON") {
       // console.log(
       //   `🐾 Summon detected: ${targetName} is summoned by ${sourceName}`
@@ -72,7 +71,7 @@ async function processLogFile(filePath, logId) {
       ALL_GUIDS[targetGUID].master_guid = sourceGUID;
     }
 
-    // ✅ Identify Pet Spells (Hunter, Warlock, DK Pets)
+    //  Identify Pet Spells (Hunter, Warlock, DK Pets)
     if (
       spellId in PET_SPELLS &&
       isPlayerGUID(sourceGUID) &&
@@ -85,7 +84,7 @@ async function processLogFile(filePath, logId) {
       ALL_GUIDS[targetGUID].master_guid = sourceGUID;
     }
 
-    // ✅ Detect "Go for the Throat" (Hunter ability to restore pet focus)
+    //  Detect "Go for the Throat" (Hunter ability to restore pet focus)
     if (
       spellId === "34952" &&
       isPlayerGUID(sourceGUID) &&
@@ -98,17 +97,17 @@ async function processLogFile(filePath, logId) {
       ALL_GUIDS[targetGUID].master_guid = sourceGUID;
     }
 
-    // ✅ Identify Boss and Group Logs
+    //  Identify Boss and Group Logs
     let bossName = getBossName(targetGUID) || getBossName(sourceGUID);
 
     if (!bossName) {
       console.warn(
-        `⚠️ Skipping non-boss event for GUID ${targetGUID} & ${sourceGUID}`
+        ` Skipping non-boss event for GUID ${targetGUID} & ${sourceGUID}`
       );
-      continue; // ✅ Skip this event if it's not related to a boss
+      continue; //  Skip this event if it's not related to a boss
     }
 
-    // ✅ Only check `getMultiBossName()` if `getBossName()` was null
+    //  Only check `getMultiBossName()` if `getBossName()` was null
     const multiBossName =
       getMultiBossName(targetGUID) || getMultiBossName(sourceGUID);
     if (multiBossName) {
@@ -116,7 +115,7 @@ async function processLogFile(filePath, logId) {
     }
 
     // console.log(
-    //   `✅ Boss detected: ${bossName} for GUID ${targetGUID} or ${sourceGUID}`
+    //   ` Boss detected: ${bossName} for GUID ${targetGUID} or ${sourceGUID}`
     // );
 
     if (bossName) {
@@ -136,7 +135,7 @@ async function processLogFile(filePath, logId) {
 
     // console.log("from boss logs:", bossLogs);
 
-    // ✅ Track Player Stats (Damage/Healing)
+    //  Track Player Stats (Damage/Healing)
     if (sourceName) {
       if (!playerStats[sourceName]) {
         playerStats[sourceName] = { class: null, damage: 0, healing: 0 };
@@ -173,15 +172,15 @@ async function processLogFile(filePath, logId) {
       const ownerGUID = PET_OWNERS[sourceGUID];
       const ownerName = ALL_GUIDS[ownerGUID]?.name;
 
-      // ✅ If ownerName is undefined, log a warning and skip processing
+      //  If ownerName is undefined, log a warning and skip processing
       if (!ownerName) {
-        console.warn(`⚠️ Owner GUID ${ownerGUID} not found in ALL_GUIDS`);
+        console.warn(` Owner GUID ${ownerGUID} not found in ALL_GUIDS`);
         // continue;
       }
 
-      // ✅ Ensure the player's stats exist before adding pet stats
+      //  Ensure the player's stats exist before adding pet stats
       if (!playerStats[ownerName]) {
-        // console.warn(`⚠️ Creating missing entry for owner: ${ownerName}`);
+        // console.warn(` Creating missing entry for owner: ${ownerName}`);
         playerStats[ownerName] = {
           class: null,
           damage: 0,
@@ -218,15 +217,6 @@ async function processLogFile(filePath, logId) {
     }
   }
 
-  // console.log("🔍 Debug: Checking bossLogs before processing...");
-
-  //   console.log(
-  //     "🔍 Boss Logs Before Processing:",
-  //     JSON.stringify(bossLogs, null, 2)
-  //   );
-
-  // console.log("bossLog only:", JSON.stringify(bossLogs, null, 2));
-
   for (const [petGUID, ownerGUID] of Object.entries(PET_OWNERS)) {
     const petName = ALL_GUIDS[petGUID]?.name || "Unknown Pet";
     const ownerName = ALL_GUIDS[ownerGUID]?.name || "Unknown Owner";
@@ -236,29 +226,38 @@ async function processLogFile(filePath, logId) {
     if (playerStats[ownerName] && playerStats[petName]) {
       playerStats[ownerName].damage += playerStats[petName].damage;
       playerStats[ownerName].healing += playerStats[petName].healing;
-      delete playerStats[petName]; // ✅ Remove pet as separate entity
+      delete playerStats[petName]; // Remove pet as separate entity
     }
   }
 
-  // ✅ Ensure bossLogs is always an object
+  // Ensure bossLogs is always an object
   if (!bossLogs || Object.keys(bossLogs).length === 0) {
-    console.error("❌ Error: No boss logs detected, skipping processing.");
+    console.error("Error: No boss logs detected, skipping processing.");
     return;
   }
 
-  // ✅ Process Fights in a Single Step
+  // Process Fights in a Single Step
   const structuredFights = {};
   for (const [boss, logs] of Object.entries(bossLogs || {})) {
-    // console.log(`🔍 Processing logs for boss: ${boss}`);
+    // console.log(` Processing logs for boss: ${boss}`);
 
     // console.log(
-    //   `🔍 Sending logs to splitToAttempts for boss: ${boss}, Logs Count: ${logs.length}`
+    //   ` Sending logs to splitToAttempts for boss: ${boss}, Logs Count: ${logs.length}`
     // );
 
     if (!logs || logs.length === 0) {
-      console.warn(`⚠️ Skipping ${boss} because no logs found.`);
+      console.warn(` Skipping ${boss} because no logs found.`);
       continue;
     }
+    // {timestamp,
+    // eventType,
+    // sourceGUID,
+    // targetGUID,
+    // sourceName,
+    // targetName,
+    // spellId,
+    // spellName,
+    // raw: line,} = logs
     // structuredFights[boss] = splitToAttempts(logs, boss);
     structuredFights[boss] = splitToAttempts(
       logs,
@@ -268,11 +267,11 @@ async function processLogFile(filePath, logId) {
     );
   }
 
-  // ✅ Ensure output directory exists
+  //  Ensure output directory exists
   const outputDir = path.join(__dirname, "../logs/json");
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-  // ✅ Save Processed Logs (JSON or DB)
+  //  Save Processed Logs (JSON or DB)
   const outputFile = path.join(outputDir, `log-${logId}.json`);
   fs.writeFileSync(
     outputFile,
@@ -288,7 +287,7 @@ async function processLogFile(filePath, logId) {
     )
   );
 
-  console.log(`✅ Processed log saved: ${outputFile}`);
+  console.log(` Processed log saved: ${outputFile}`);
   return structuredFights;
 }
 

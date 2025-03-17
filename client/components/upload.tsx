@@ -37,7 +37,7 @@ export function Upload({
   const [status, setStatus] = useState<string>("processing");
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      // ✅ Enforce .zip file uploads
+      //  Enforce .zip file uploads
       if (!e.target.files[0].name.endsWith(".zip")) {
         setEnableUpload(false);
         toast("Please upload a .zip file only!");
@@ -73,7 +73,7 @@ export function Upload({
   const handleUploadMetadata = async (metadata: LogsMetadata) => {
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/logs/upload-metadata",
+        "http://localhost:8000/api/upload-logs/upload-metadata",
         metadata,
         { headers: { "Content-Type": "application/json" } }
       );
@@ -87,7 +87,7 @@ export function Upload({
   const handleClick = async (e: React.FormEvent<HTMLFormElement>) => {
     // Ensure that a file is selected before proceeding
     if (!selectedFile) {
-      console.error("❌ No file selected!");
+      console.error(" No file selected!");
       return;
     }
     e.preventDefault();
@@ -145,7 +145,7 @@ export function Upload({
     const interval = setInterval(async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8000/api/logs/status/${logId}`
+          `http://localhost:8000/api/logs/redis/status/${logId}`
         );
         if (res.data.status === "completed") {
           setStatus("completed");

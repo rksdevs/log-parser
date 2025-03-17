@@ -1,7 +1,7 @@
 import bossesData from "../dictionaries/bosses.json" assert { type: "json" };
 
 console.log(
-  "🔍 Bosses JSON Loaded, Available Boss IDs:",
+  " Bosses JSON Loaded, Available Boss IDs:",
   Object.keys(bossesData.BOSSES_GUIDS)
 );
 
@@ -14,9 +14,9 @@ function extractBossID(guid) {
   console.log("Guid being searched: ", guid);
   if (!guid || guid.length < 16) return null; // Ensure valid GUID length
 
-  // ✅ Correct extraction: Extract only the Boss ID (6th to 10th character)
+  //  Correct extraction: Extract only the Boss ID (6th to 10th character)
   const bossID = guid.substring(4, 10);
-  console.log(`🔍 Extracted Corrected Boss ID: ${bossID} from GUID: ${guid}`);
+  console.log(` Extracted Corrected Boss ID: ${bossID} from GUID: ${guid}`);
 
   return bossID;
 }
@@ -28,18 +28,18 @@ function extractBossID(guid) {
  * @returns {string|null} - Boss name if found, otherwise null.
  */
 function getBossName(guid) {
-  console.log(`🔍 Debug: Checking boss GUID ${guid}`);
+  console.log(` Debug: Checking boss GUID ${guid}`);
 
   if (!guid) {
     console.warn(
-      "⚠️ Warning: Received undefined or empty GUID in getBossName()."
+      " Warning: Received undefined or empty GUID in getBossName()."
     );
     return null;
   }
 
   const bossID = extractBossID(guid);
   if (!bossID) {
-    console.warn(`⚠️ Could not extract boss ID from GUID ${guid}`);
+    console.warn(` Could not extract boss ID from GUID ${guid}`);
     return null;
   }
 
@@ -47,11 +47,11 @@ function getBossName(guid) {
 
   if (!boss) {
     console.warn(
-      `⚠️ No boss found for extracted ID ${bossID}. This might be a non-boss event.`
+      ` No boss found for extracted ID ${bossID}. This might be a non-boss event.`
     );
-    return null; // ✅ Ensure non-boss encounters are ignored
+    return null; //  Ensure non-boss encounters are ignored
   } else {
-    console.log(`✅ Found boss: ${boss} for ID ${bossID}`);
+    console.log(` Found boss: ${boss} for ID ${bossID}`);
   }
 
   return boss;
@@ -63,31 +63,31 @@ function getBossName(guid) {
  * @returns {string|null} - Multi-boss encounter name if found, otherwise null.
  */
 function getMultiBossName(guid) {
-  console.log(`🔍 Debug: Checking multi-boss GUID ${guid}`);
+  console.log(` Debug: Checking multi-boss GUID ${guid}`);
 
   if (!guid) {
     console.warn(
-      "⚠️ Warning: Received undefined or empty GUID in getMultiBossName()."
+      " Warning: Received undefined or empty GUID in getMultiBossName()."
     );
     return null;
   }
 
   const bossID = extractBossID(guid);
   if (!bossID) {
-    console.warn(`⚠️ Could not extract boss ID from GUID ${guid}`);
+    console.warn(` Could not extract boss ID from GUID ${guid}`);
     return null;
   }
 
   for (const [encounter, guids] of Object.entries(bossesData.MULTIPLEBOSS)) {
     if (guids.includes(bossID)) {
       console.log(
-        `✅ Found multi-boss encounter: ${encounter} for extracted ID ${bossID}`
+        ` Found multi-boss encounter: ${encounter} for extracted ID ${bossID}`
       );
       return encounter;
     }
   }
 
-  console.warn(`⚠️ No multi-boss encounter found for extracted ID ${bossID}.`);
+  console.warn(` No multi-boss encounter found for extracted ID ${bossID}.`);
   return null;
 }
 
