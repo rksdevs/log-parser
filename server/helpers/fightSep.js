@@ -18,8 +18,11 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
   const MAX_GAP = 30000; // 30 seconds for fight reset
 
   for (const log of logLines) {
-    const { timestamp, raw, targetGUID } = log;
+    const { timestamp, raw, targetGUID, damageBreakdown, healingBreakdown } =
+      log;
     const timeInMs = convertTimestampToMs(timestamp);
+    console.log("damage breakdown from splittoattempts", damageBreakdown);
+    console.log("healing breakdown from splittoattempts", healingBreakdown);
 
     // Identify boss from target
     const bossName = getBossName(targetGUID);
@@ -205,6 +208,7 @@ function processAttempt(
 
   for (const log of attemptLogs) {
     const { sourceGUID, sourceName, eventType, raw } = log;
+    // console.log(log, "from fight sep");
 
     //  Ensure player is initialized
     if (sourceName && !attemptPlayers[sourceName]) {

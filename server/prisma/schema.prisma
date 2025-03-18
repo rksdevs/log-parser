@@ -45,7 +45,7 @@ model Logs {
 // New Tables for Storing Structured Data
 
 model Encounter {
-  id        Int      @id @default(autoincrement())
+  id        String   @id
   log       Logs     @relation(fields: [logId], references: [logId])
   logId     Int
   name      String
@@ -54,17 +54,17 @@ model Encounter {
 }
 
 model Boss {
-  id          Int       @id @default(autoincrement())
+  id          String    @id
   name        String
   encounter   Encounter @relation(fields: [encounterId], references: [id])
-  encounterId Int
+  encounterId String
   attempts    Attempt[]
 }
 
 model Attempt {
-  id           Int                  @id @default(autoincrement())
+  id           String               @id
   boss         Boss                 @relation(fields: [bossId], references: [id])
-  bossId       Int
+  bossId       String
   startTime    DateTime
   endTime      DateTime
   totalDamage  Int
@@ -75,8 +75,8 @@ model Attempt {
 }
 
 model Player {
-  id             Int                  @id @default(autoincrement())
-  name           String               @unique
+  id             Int                  @id
+  name           String
   class          String?
   attempts       AttemptParticipant[]
   SpellStatistic SpellStatistic[]
@@ -85,7 +85,7 @@ model Player {
 model AttemptParticipant {
   id          Int     @id @default(autoincrement())
   attempt     Attempt @relation(fields: [attemptId], references: [id])
-  attemptId   Int
+  attemptId   String
   player      Player  @relation(fields: [playerId], references: [id])
   playerId    Int
   damageDone  Int     @default(0)
@@ -95,7 +95,7 @@ model AttemptParticipant {
 model Log {
   id         Int      @id @default(autoincrement())
   attempt    Attempt  @relation(fields: [attemptId], references: [id])
-  attemptId  Int
+  attemptId  String
   timestamp  DateTime
   eventType  String
   sourceGUID String?
@@ -107,7 +107,7 @@ model Log {
 model SpellStatistic {
   id           Int     @id @default(autoincrement())
   attempt      Attempt @relation(fields: [attemptId], references: [id])
-  attemptId    Int
+  attemptId    String
   player       Player  @relation(fields: [playerId], references: [id])
   playerId     Int
   spellId      Int

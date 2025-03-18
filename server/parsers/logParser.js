@@ -77,9 +77,9 @@ async function processLogFile(filePath, logId) {
       isPlayerGUID(sourceGUID) &&
       isPetGUID(targetGUID)
     ) {
-      console.log(
-        `🐾 Detected PET SPELL: ${spellName} (${spellId}) → Pet: ${targetName}`
-      );
+      // console.log(
+      //   `🐾 Detected PET SPELL: ${spellName} (${spellId}) → Pet: ${targetName}`
+      // );
       PET_OWNERS[targetGUID] = sourceGUID;
       ALL_GUIDS[targetGUID].master_guid = sourceGUID;
     }
@@ -90,9 +90,9 @@ async function processLogFile(filePath, logId) {
       isPlayerGUID(sourceGUID) &&
       isPetGUID(targetGUID)
     ) {
-      console.log(
-        `🐾 Go for the Throat detected → Assigning ${targetName} to ${sourceName}`
-      );
+      // console.log(
+      //   `🐾 Go for the Throat detected → Assigning ${targetName} to ${sourceName}`
+      // );
       PET_OWNERS[targetGUID] = sourceGUID;
       ALL_GUIDS[targetGUID].master_guid = sourceGUID;
     }
@@ -120,6 +120,60 @@ async function processLogFile(filePath, logId) {
 
     if (bossName) {
       if (!bossLogs[bossName]) bossLogs[bossName] = [];
+      //if damage swing or damage cast handle the damage breakdown
+      let damageBreakdown = {};
+      let healingBreakdown = {};
+      if (eventType.includes("DAMAGE")) {
+        console.log(parts[0]);
+        if (parts[0].trim() === "SWING_DAMAGE") {
+          console.log(
+            "From Swing event: -",
+            parts[7],
+            parts[8],
+            parts[10],
+            parts[11],
+            parts[12],
+            parts[13],
+            parts[14],
+            parts[15]
+          );
+          damageBreakdown.amount = parseInt(parts[7]);
+          damageBreakdown.overkill = parseInt(parts[8]);
+          damageBreakdown.resisted = parseInt(parts[10]);
+          damageBreakdown.blocked = parseInt(parts[11]);
+          damageBreakdown.absorbed = parseInt(parts[12]);
+          damageBreakdown.critical = parts[13].trim() === "nil" ? false : true;
+          damageBreakdown.glancing = parts[14].trim() === "nil" ? false : true;
+          damageBreakdown.crushing = parts[15].trim() === "nil" ? false : true;
+        } else {
+          console.log(
+            "From Non-swing event: -",
+            parts[10],
+            parts[11],
+            parts[13],
+            parts[14],
+            parts[15],
+            parts[16],
+            parts[17],
+            parts[18]
+          );
+          damageBreakdown.amount = parseInt(parts[10]);
+          damageBreakdown.overkill = parseInt(parts[11]);
+          damageBreakdown.resisted = parseInt(parts[13]);
+          damageBreakdown.blocked = parseInt(parts[14]);
+          damageBreakdown.absorbed = parseInt(parts[15]);
+          damageBreakdown.critical = parts[16].trim() === "nil" ? false : true;
+          damageBreakdown.glancing = parts[17].trim() === "nil" ? false : true;
+          damageBreakdown.crushing = parts[18].trim() === "nil" ? false : true;
+        }
+      }
+      if (eventType.includes("HEAL")) {
+        healingBreakdown.amount = parseInt(parts[10]);
+        healingBreakdown.overHealing = parseInt(parts[11]);
+        healingBreakdown.absorbed = parseInt(parts[12]);
+        healingBreakdown.critical = parts[13].trim() === "nil" ? false : true;
+      }
+
       bossLogs[bossName].push({
         timestamp,
         eventType,
@@ -130,6 +184,8 @@ async function processLogFile(filePath, logId) {
         spellId,
         spellName,
         raw: line,
+        damageBreakdown,
+        healingBreakdown,
       });
     }
 

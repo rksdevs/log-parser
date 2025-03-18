@@ -34,18 +34,18 @@ const postgresWorker = new Worker(
         const bosses = structuredFights[encounterName];
 
         // Prepare encounter insert
-        const encounterId = encounterInserts.length + 1;
+        const encounterId = `${logId}-${encounterInserts.length + 1}`;
         encounterInserts.push({ id: encounterId, name: encounterName, logId });
 
         for (const bossName in bosses) {
           const attempts = bosses[bossName];
 
           // Prepare boss insert
-          const bossId = bossInserts.length + 1;
+          const bossId = `${logId}-${bossInserts.length + 1}`;
           bossInserts.push({ id: bossId, name: bossName, encounterId });
 
           for (const attempt of attempts) {
-            const attemptId = attemptInserts.length + 1;
+            const attemptId = `${logId}-${attemptInserts.length + 1}`;
             attemptInserts.push({
               id: attemptId,
               bossId,
