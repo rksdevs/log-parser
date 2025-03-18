@@ -105,16 +105,19 @@ model Log {
 }
 
 model SpellStatistic {
-  id           Int     @id @default(autoincrement())
-  attempt      Attempt @relation(fields: [attemptId], references: [id])
-  attemptId    String
-  player       Player  @relation(fields: [playerId], references: [id])
-  playerId     Int
-  spellId      Int
-  spellName    String
-  totalDamage  Int     @default(0)
-  totalCasts   Int     @default(0)
-  normalHits   Int     @default(0)
-  criticalHits Int     @default(0)
-  periodicHits Int     @default(0)
+  id            Int     @id @default(autoincrement())
+  attempt       Attempt @relation(fields: [attemptId], references: [id])
+  attemptId     String
+  player        Player  @relation(fields: [playerId], references: [id])
+  playerId      Int
+  playerName    String
+  spellId       String
+  spellName     String
+  totalDamage   Int     @default(0)
+  totalCasts    Int     @default(0)
+  normalHits    Int     @default(0)
+  criticalHits  Int     @default(0)
+  periodicHits  Int     @default(0)
+  periodicCrits Int     @default(0)
+  usefulDamage  Int     @default(0)
 }

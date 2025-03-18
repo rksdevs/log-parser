@@ -8,7 +8,7 @@ import prisma from "../config/db.js";
 
 export const getPlayerSpells = async (req, res) => {
   try {
-    const { logId, encounterName, startTime, playerId } = req.params;
+    const { logId, encounterName, startTime, playerName } = req.params;
 
     const spells = await prisma.spellStatistic.findMany({
       where: {
@@ -21,7 +21,7 @@ export const getPlayerSpells = async (req, res) => {
             },
           },
         },
-        playerId: parseInt(playerId),
+        playerName: playerName,
       },
     });
 

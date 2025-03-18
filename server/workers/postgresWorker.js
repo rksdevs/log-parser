@@ -23,6 +23,7 @@ const postgresWorker = new Worker(
       let playerInserts = [];
       let attemptParticipantInserts = [];
       let logInserts = [];
+      let spellStatisticInserts = [];
 
       // Batch Fetch Existing Players to Avoid Repeated Lookups
       let existingPlayers = await prisma.player.findMany({
@@ -74,9 +75,32 @@ const postgresWorker = new Worker(
                 damageDone: attempt.damageByPlayer[playerName] || 0,
                 healingDone: attempt.players[playerName].healing || 0,
               });
+
+              for (const spell in attempt.players[playerName].spellList) {
+                console.log("from spell inserts", spell);
+                spellStatisticInserts.push({
+                  attemptId,
+                  playerId,
+                  playerName,
+                  spellId: attempt.players[playerName].spellList[spell].spellId,
+                  spellName:
+                    attempt.players[playerName].spellList[spell].spellName,
+                  totalDamage:
+                    attempt.players[playerName].spellList[spell].totalDamage,
+                  usefulDamage:
+                    attempt.players[playerName].spellList[spell].usefulDamage,
+                  totalCasts:
+                    attempt.players[playerName].spellList[spell].totalCasts,
+                  normalHits:
+                    attempt.players[playerName].spellList[spell].normalHits,
+                  criticalHits:
+                    attempt.players[playerName].spellList[spell].criticalHits,
+                });
+              }
             }
 
             for (const logEvent of attempt.logs) {
+              // console.log(logEvent, "from postgres worker");
               logInserts.push({
                 attemptId,
                 timestamp: new Date(logEvent.timestamp),
@@ -109,6 +133,13 @@ const postgresWorker = new Worker(
       );
       await prisma.attemptParticipant.createMany({
         data: attemptParticipantInserts,
+      });
+
+      console.log(
+        `📌 Inserting ${spellStatisticInserts.length} spell statistics...`
+      );
+      await prisma.spellStatistic.createMany({
+        data: spellStatisticInserts,
       });
 
       console.log(`📌 Inserting ${logInserts.length} logs...`);

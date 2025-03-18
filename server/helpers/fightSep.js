@@ -21,8 +21,6 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
     const { timestamp, raw, targetGUID, damageBreakdown, healingBreakdown } =
       log;
     const timeInMs = convertTimestampToMs(timestamp);
-    console.log("damage breakdown from splittoattempts", damageBreakdown);
-    console.log("healing breakdown from splittoattempts", healingBreakdown);
 
     // Identify boss from target
     const bossName = getBossName(targetGUID);
@@ -51,7 +49,7 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
     }
 
     // Store log
-    currentAttempt[bossName].push(log);
+    currentAttempt[bossName].push(log); ///this is where every single log line will be added to bossName
     lastTimestamp[bossName] = timeInMs;
   }
 
@@ -204,11 +202,39 @@ function processAttempt(
 
   const attemptPlayers = {}; // Stores per-player stats
   let overallDamage = 0; //  Tracks total damage across all actors
+  let totalUsefulDamage = 0; //  Tracks total damage across all actors
   let damageByPlayer = {}; //  Tracks damage by players (excluding pets)
+  let spellList = {}; //to store all the spells used by the player
+  let spellDetails = {
+    spellId: null,
+    spellName: "",
+    totalDamage: 0,
+    usefulDamage: 0,
+    totalCasts: 0,
+    normalHits: 0,
+    criticalHits: 0,
+    periodicHits: 0,
+    periodicCrits: 0,
+  }; //every individual spell details spellId, spellName, totalDamage, totalCasts,
 
   for (const log of attemptLogs) {
-    const { sourceGUID, sourceName, eventType, raw } = log;
+    const {
+      sourceGUID,
+      sourceName,
+      eventType,
+      raw,
+      damageBreakdown,
+      healingBreakdown,
+      spellName,
+      spellId,
+    } = log;
     // console.log(log, "from fight sep");
+    // console.log(
+    //   "damage breakdown from process attempts",
+    //   damageBreakdown,
+    //   spellName
+    // );
+    // console.log("healing breakdown from process attempts", healingBreakdown);
 
     //  Ensure player is initialized
     if (sourceName && !attemptPlayers[sourceName]) {
@@ -218,32 +244,103 @@ function processAttempt(
         playerTotalDamage: 0, //  Player’s direct + pet damage
         healing: 0,
         pets: {},
+        spellList: {},
       };
     }
 
-    //  Track Player Damage (Direct)
-    if (sourceName && eventType.includes("DAMAGE")) {
-      // const damageAmount = parseInt(raw.split(",")[10]) || 0;
-      const damageAmount =
-        (eventType.trim() === "SWING_DAMAGE"
-          ? parseInt(raw.split(",")[7])
-          : parseInt(raw.split(",")[10])) || 0;
-      attemptPlayers[sourceName].playerDamage += damageAmount; //  Only player's damage
-      attemptPlayers[sourceName].playerTotalDamage += damageAmount; //  Player + pet damage
-      overallDamage += damageAmount; //  Add to total fight damage
+    //checks whether it is a damage event or healing event and adds up the damage
+    if (damageBreakdown && damageBreakdown.amount) {
+      let totalDamageForCurrentEvent =
+        damageBreakdown.amount -
+        damageBreakdown.overkill +
+        damageBreakdown.resisted +
+        damageBreakdown.absorbed;
+      let totalUsefulDamageForCurrentEvent =
+        damageBreakdown.amount - damageBreakdown.overkill;
+      if (eventType.trim() === "SWING_DAMAGE") {
+        //check if the player's spelllist already has the swing damage  entry
 
-      //  Store in `damageByPlayer`
+        if (sourceName && !attemptPlayers[sourceName].spellList["Melee"]) {
+          attemptPlayers[sourceName].spellList["Melee"] = {
+            spellId: "999999",
+            spellName: "Melee",
+            totalDamage: totalDamageForCurrentEvent,
+            usefulDamage: totalUsefulDamageForCurrentEvent,
+            totalCasts: 1,
+            normalHits: damageBreakdown.critical ? 0 : 1,
+            criticalHits: damageBreakdown.critical ? 1 : 0,
+            //need to add logic for periodic hits
+          };
+        } else {
+          //here I want to add the values to the existing values
+          attemptPlayers[sourceName].spellList["Melee"].totalDamage +=
+            totalDamageForCurrentEvent;
+          attemptPlayers[sourceName].spellList["Melee"].usefulDamage +=
+            totalUsefulDamageForCurrentEvent;
+          attemptPlayers[sourceName].spellList["Melee"].totalCasts += 1;
+          attemptPlayers[sourceName].spellList["Melee"].normalHits +=
+            damageBreakdown.critical ? 0 : 1;
+          attemptPlayers[sourceName].spellList["Melee"].criticalHits +=
+            damageBreakdown.critical ? 1 : 0;
+        }
+      } else {
+        if (sourceName && !attemptPlayers[sourceName].spellList[spellName]) {
+          attemptPlayers[sourceName].spellList[spellName] = {
+            spellId: spellId,
+            spellName: spellName,
+            totalDamage: totalDamageForCurrentEvent,
+            usefulDamage: totalUsefulDamageForCurrentEvent,
+            totalCasts: 1,
+            normalHits: damageBreakdown.critical ? 0 : 1,
+            criticalHits: damageBreakdown.critical ? 1 : 0,
+            //need to add logic for periodic hits
+          };
+        } else {
+          attemptPlayers[sourceName].spellList[spellName].totalDamage +=
+            totalDamageForCurrentEvent;
+          attemptPlayers[sourceName].spellList[spellName].usefulDamage +=
+            totalUsefulDamageForCurrentEvent;
+          attemptPlayers[sourceName].spellList[spellName].totalCasts += 1;
+          attemptPlayers[sourceName].spellList[spellName].normalHits +=
+            damageBreakdown.critical ? 0 : 1;
+          attemptPlayers[sourceName].spellList[spellName].criticalHits +=
+            damageBreakdown.critical ? 1 : 0;
+        }
+      }
+
+      attemptPlayers[sourceName].playerDamage += damageBreakdown.amount; //  Only player's damage
+      attemptPlayers[sourceName].playerTotalDamage += damageBreakdown.amount; //  Player + pet damage
+      overallDamage += damageBreakdown.amount; //  Add to total fight damage
+
       if (!damageByPlayer[sourceName]) {
         damageByPlayer[sourceName] = 0;
       }
-      damageByPlayer[sourceName] += damageAmount;
+      damageByPlayer[sourceName] += damageBreakdown.amount;
     }
 
-    //  Track Healing
-    if (sourceName && eventType.includes("HEAL")) {
-      const healingAmount = parseInt(raw.split(",")[10]) || 0;
-      attemptPlayers[sourceName].healing += healingAmount;
-    }
+    //  Track Player Damage (Direct)
+    // if (sourceName && eventType.includes("DAMAGE")) {
+    //   // const damageAmount = parseInt(raw.split(",")[10]) || 0;
+    //   const damageAmount =
+    //     (eventType.trim() === "SWING_DAMAGE"
+    //       ? parseInt(raw.split(",")[7])
+    //       : parseInt(raw.split(",")[10])) || 0;
+    //   attemptPlayers[sourceName].playerDamage += damageAmount; //  Only player's damage
+    //   attemptPlayers[sourceName].playerTotalDamage += damageAmount; //  Player + pet damage
+    //   overallDamage += damageAmount; //  Add to total fight damage
+
+    //   //  Store in `damageByPlayer`
+    //   if (!damageByPlayer[sourceName]) {
+    //     damageByPlayer[sourceName] = 0;
+    //   }
+    //   damageByPlayer[sourceName] += damageAmount;
+    // }
+
+    // //  Track Healing
+    // if (sourceName && eventType.includes("HEAL")) {
+    //   const healingAmount = parseInt(raw.split(",")[10]) || 0;
+    //   attemptPlayers[sourceName].healing += healingAmount;
+    // }
 
     //  Handle Pets
     if (sourceGUID && petOwners[sourceGUID]) {
@@ -259,6 +356,7 @@ function processAttempt(
             playerTotalDamage: 0,
             healing: 0,
             pets: {},
+            spellList: {},
           };
         }
 

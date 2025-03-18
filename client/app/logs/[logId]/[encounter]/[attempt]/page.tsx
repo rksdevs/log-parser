@@ -8,6 +8,7 @@ import {
   getCoreRowModel,
   flexRender,
   ColumnDef,
+  createColumnHelper,
 } from "@tanstack/react-table";
 
 interface PlayerStats {
@@ -35,8 +36,12 @@ export default function AttemptPage() {
       .catch((error) => console.error("Error fetching attempt data:", error));
   }, [logId, encounter, attempt]);
 
+  const columnHelper = createColumnHelper();
+  /** @type import('@tanstack/react-table').columnDef<any>*/
+
   const columns: ColumnDef<PlayerStats>[] = [
-    { accessorKey: "playerName", header: "Player" },
+    // { accessorKey: "playerName", header: "Player" },
+
     { accessorKey: "totalDamage", header: "Total Damage" },
     { accessorKey: "dps", header: "DPS" },
     { accessorKey: "totalHealing", header: "Total Healing" },

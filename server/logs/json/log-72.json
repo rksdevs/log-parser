@@ -1,0 +1,862 @@
+{
+  "fights": {
+    "Lord Jaraxxus": {
+      "Lord Jaraxxus": [
+        {
+          "boss": "Lord Jaraxxus",
+          "startTime": "1/20 01:07:05.360",
+          "endTime": "1/20 01:07:05.936",
+          "overallDamage": 27184,
+          "damageByPlayer": {
+            "Kitsunemiko": 11429,
+            "Thorvid": 5914,
+            "Tether": 5888,
+            "Batstalker": 1420,
+            "Magma Totem VII": 1113
+          },
+          "logs": [
+            {
+              "timestamp": "1/20 01:07:05.360",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "62124",
+              "spellName": "Hand of Reckoning"
+            },
+            {
+              "timestamp": "1/20 01:07:05.360",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "67485",
+              "spellName": "Hand of Reckoning"
+            },
+            {
+              "timestamp": "1/20 01:07:05.360",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53595",
+              "spellName": "Hammer of the Righteous"
+            },
+            {
+              "timestamp": "1/20 01:07:05.360",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "776",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:07:05.428",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "62124",
+              "spellName": "Hand of Reckoning"
+            },
+            {
+              "timestamp": "1/20 01:07:05.428",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "26017",
+              "spellName": "Vindication"
+            },
+            {
+              "timestamp": "1/20 01:07:05.428",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53742",
+              "spellName": "Blood Corruption"
+            },
+            {
+              "timestamp": "1/20 01:07:05.516",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53595",
+              "spellName": "Hammer of the Righteous"
+            },
+            {
+              "timestamp": "1/20 01:07:05.516",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53739",
+              "spellName": "Seal of Corruption"
+            },
+            {
+              "timestamp": "1/20 01:07:05.537",
+              "eventType": " SPELL_AURA_APPLIED_DOSE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53742",
+              "spellName": "Blood Corruption"
+            },
+            {
+              "timestamp": "1/20 01:07:05.607",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "49909",
+              "spellName": "Icy Touch"
+            },
+            {
+              "timestamp": "1/20 01:07:05.607",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "49909",
+              "spellName": "Icy Touch"
+            },
+            {
+              "timestamp": "1/20 01:07:05.646",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "55095",
+              "spellName": "Frost Fever"
+            },
+            {
+              "timestamp": "1/20 01:07:05.646",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "51735",
+              "spellName": "Ebon Plague"
+            },
+            {
+              "timestamp": "1/20 01:07:05.709",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "2690",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:07:05.709",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "51460",
+              "spellName": "Necrosis"
+            },
+            {
+              "timestamp": "1/20 01:07:05.724",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "000000000000CE16",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "48566",
+              "spellName": "Mangle (Cat)"
+            },
+            {
+              "timestamp": "1/20 01:07:05.724",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "000000000000CE16",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "48566",
+              "spellName": "Mangle (Cat)"
+            },
+            {
+              "timestamp": "1/20 01:07:05.724",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "000000000000CE16",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "874",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:07:05.724",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "000000000000CE16",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "48566",
+              "spellName": "Mangle (Cat)"
+            },
+            {
+              "timestamp": "1/20 01:07:05.767",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "924",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:07:05.780",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "51460",
+              "spellName": "Necrosis"
+            },
+            {
+              "timestamp": "1/20 01:07:05.830",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "F1400137FB00CC3E",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "455",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:07:05.830",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "F1400137FB00CC3E",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "47468",
+              "spellName": "Claw"
+            },
+            {
+              "timestamp": "1/20 01:07:05.830",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "F1400137FB00CC3E",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "47468",
+              "spellName": "Claw"
+            },
+            {
+              "timestamp": "1/20 01:07:05.936",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "F1300079BF2157DE",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "58735",
+              "spellName": "Magma Totem"
+            }
+          ],
+          "players": {
+            "Kitsunemiko": {
+              "class": "Paladin",
+              "playerDamage": 11429,
+              "playerTotalDamage": 11429,
+              "healing": 0,
+              "pets": {},
+              "spellList": {
+                "Hand of Reckoning": {
+                  "spellId": "67485",
+                  "spellName": "Hand of Reckoning",
+                  "totalDamage": 4802,
+                  "usefulDamage": 4802,
+                  "totalCasts": 1,
+                  "normalHits": 0,
+                  "criticalHits": 1
+                },
+                "Melee": {
+                  "spellId": "999999",
+                  "spellName": "Melee",
+                  "totalDamage": 776,
+                  "usefulDamage": 776,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                },
+                "Hammer of the Righteous": {
+                  "spellId": "53595",
+                  "spellName": "Hammer of the Righteous",
+                  "totalDamage": 5709,
+                  "usefulDamage": 5709,
+                  "totalCasts": 1,
+                  "normalHits": 0,
+                  "criticalHits": 1
+                },
+                "Seal of Corruption": {
+                  "spellId": "53739",
+                  "spellName": "Seal of Corruption",
+                  "totalDamage": 142,
+                  "usefulDamage": 142,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                }
+              }
+            },
+            "Thorvid": {
+              "class": "Death Knight",
+              "playerDamage": 5914,
+              "playerTotalDamage": 7334,
+              "healing": 0,
+              "pets": {
+                "Batstalker": {
+                  "damage": 1420,
+                  "healing": 0
+                }
+              },
+              "spellList": {
+                "Icy Touch": {
+                  "spellId": "49909",
+                  "spellName": "Icy Touch",
+                  "totalDamage": 1578,
+                  "usefulDamage": 1578,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                },
+                "Melee": {
+                  "spellId": "999999",
+                  "spellName": "Melee",
+                  "totalDamage": 3614,
+                  "usefulDamage": 3614,
+                  "totalCasts": 2,
+                  "normalHits": 0,
+                  "criticalHits": 2
+                },
+                "Necrosis": {
+                  "spellId": "51460",
+                  "spellName": "Necrosis",
+                  "totalDamage": 722,
+                  "usefulDamage": 722,
+                  "totalCasts": 2,
+                  "normalHits": 2,
+                  "criticalHits": 0
+                }
+              }
+            },
+            "Tether": {
+              "class": "Druid",
+              "playerDamage": 5888,
+              "playerTotalDamage": 5888,
+              "healing": 0,
+              "pets": {},
+              "spellList": {
+                "Mangle (Cat)": {
+                  "spellId": "48566",
+                  "spellName": "Mangle (Cat)",
+                  "totalDamage": 5014,
+                  "usefulDamage": 5014,
+                  "totalCasts": 1,
+                  "normalHits": 0,
+                  "criticalHits": 1
+                },
+                "Melee": {
+                  "spellId": "999999",
+                  "spellName": "Melee",
+                  "totalDamage": 874,
+                  "usefulDamage": 874,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                }
+              }
+            },
+            "Batstalker": {
+              "class": "Unknown",
+              "playerDamage": 1420,
+              "playerTotalDamage": 1420,
+              "healing": 0,
+              "pets": {},
+              "spellList": {
+                "Melee": {
+                  "spellId": "999999",
+                  "spellName": "Melee",
+                  "totalDamage": 455,
+                  "usefulDamage": 455,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                },
+                "Claw": {
+                  "spellId": "47468",
+                  "spellName": "Claw",
+                  "totalDamage": 965,
+                  "usefulDamage": 965,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                }
+              }
+            },
+            "Magma Totem VII": {
+              "class": "Unknown",
+              "playerDamage": 1113,
+              "playerTotalDamage": 1113,
+              "healing": 0,
+              "pets": {},
+              "spellList": {
+                "Magma Totem": {
+                  "spellId": "58735",
+                  "spellName": "Magma Totem",
+                  "totalDamage": 1113,
+                  "usefulDamage": 1113,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "boss": "Lord Jaraxxus",
+          "startTime": "1/20 01:08:05.360",
+          "endTime": "1/20 01:08:05.936",
+          "overallDamage": 27214,
+          "damageByPlayer": {
+            "Kitsunemiko": 11439,
+            "Thorvid": 5914,
+            "Tether": 5888,
+            "Batstalker": 1430,
+            "Magma Totem VII": 1113
+          },
+          "logs": [
+            {
+              "timestamp": "1/20 01:08:05.360",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "62124",
+              "spellName": "Hand of Reckoning"
+            },
+            {
+              "timestamp": "1/20 01:08:05.360",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "67485",
+              "spellName": "Hand of Reckoning"
+            },
+            {
+              "timestamp": "1/20 01:08:05.360",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53595",
+              "spellName": "Hammer of the Righteous"
+            },
+            {
+              "timestamp": "1/20 01:08:05.360",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "776",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:08:05.428",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "62124",
+              "spellName": "Hand of Reckoning"
+            },
+            {
+              "timestamp": "1/20 01:08:05.428",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "26017",
+              "spellName": "Vindication"
+            },
+            {
+              "timestamp": "1/20 01:08:05.428",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53742",
+              "spellName": "Blood Corruption"
+            },
+            {
+              "timestamp": "1/20 01:08:05.516",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53595",
+              "spellName": "Hammer of the Righteous"
+            },
+            {
+              "timestamp": "1/20 01:08:05.516",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53739",
+              "spellName": "Seal of Corruption"
+            },
+            {
+              "timestamp": "1/20 01:08:05.537",
+              "eventType": " SPELL_AURA_APPLIED_DOSE",
+              "sourceGUID": "000000000000E34C",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "53742",
+              "spellName": "Blood Corruption"
+            },
+            {
+              "timestamp": "1/20 01:08:05.607",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "49909",
+              "spellName": "Icy Touch"
+            },
+            {
+              "timestamp": "1/20 01:08:05.607",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "49909",
+              "spellName": "Icy Touch"
+            },
+            {
+              "timestamp": "1/20 01:08:05.646",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "55095",
+              "spellName": "Frost Fever"
+            },
+            {
+              "timestamp": "1/20 01:08:05.646",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "51735",
+              "spellName": "Ebon Plague"
+            },
+            {
+              "timestamp": "1/20 01:08:05.709",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "2690",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:08:05.709",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "51460",
+              "spellName": "Necrosis"
+            },
+            {
+              "timestamp": "1/20 01:08:05.724",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "000000000000CE16",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "48566",
+              "spellName": "Mangle (Cat)"
+            },
+            {
+              "timestamp": "1/20 01:08:05.724",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "000000000000CE16",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "48566",
+              "spellName": "Mangle (Cat)"
+            },
+            {
+              "timestamp": "1/20 01:08:05.724",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "000000000000CE16",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "874",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:08:05.724",
+              "eventType": " SPELL_AURA_APPLIED",
+              "sourceGUID": "000000000000CE16",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "48566",
+              "spellName": "Mangle (Cat)"
+            },
+            {
+              "timestamp": "1/20 01:08:05.767",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "924",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:08:05.780",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "0000000000004E2D",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "51460",
+              "spellName": "Necrosis"
+            },
+            {
+              "timestamp": "1/20 01:08:05.830",
+              "eventType": " SWING_DAMAGE",
+              "sourceGUID": "F1400137FB00CC3E",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "455",
+              "spellName": "0"
+            },
+            {
+              "timestamp": "1/20 01:08:05.830",
+              "eventType": " SPELL_CAST_SUCCESS",
+              "sourceGUID": "F1400137FB00CC3E",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "47468",
+              "spellName": "Claw"
+            },
+            {
+              "timestamp": "1/20 01:08:05.830",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "F1400137FB00CC3E",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "47468",
+              "spellName": "Claw"
+            },
+            {
+              "timestamp": "1/20 01:08:05.936",
+              "eventType": " SPELL_DAMAGE",
+              "sourceGUID": "F1300079BF2157DE",
+              "targetGUID": "F1300087DC214E1B",
+              "spellId": "58735",
+              "spellName": "Magma Totem"
+            }
+          ],
+          "players": {
+            "Kitsunemiko": {
+              "class": "Paladin",
+              "playerDamage": 11439,
+              "playerTotalDamage": 11439,
+              "healing": 0,
+              "pets": {},
+              "spellList": {
+                "Hand of Reckoning": {
+                  "spellId": "67485",
+                  "spellName": "Hand of Reckoning",
+                  "totalDamage": 4812,
+                  "usefulDamage": 4812,
+                  "totalCasts": 1,
+                  "normalHits": 0,
+                  "criticalHits": 1
+                },
+                "Melee": {
+                  "spellId": "999999",
+                  "spellName": "Melee",
+                  "totalDamage": 776,
+                  "usefulDamage": 776,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                },
+                "Hammer of the Righteous": {
+                  "spellId": "53595",
+                  "spellName": "Hammer of the Righteous",
+                  "totalDamage": 5709,
+                  "usefulDamage": 5709,
+                  "totalCasts": 1,
+                  "normalHits": 0,
+                  "criticalHits": 1
+                },
+                "Seal of Corruption": {
+                  "spellId": "53739",
+                  "spellName": "Seal of Corruption",
+                  "totalDamage": 142,
+                  "usefulDamage": 142,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                }
+              }
+            },
+            "Thorvid": {
+              "class": "Death Knight",
+              "playerDamage": 5914,
+              "playerTotalDamage": 7344,
+              "healing": 0,
+              "pets": {
+                "Batstalker": {
+                  "damage": 1430,
+                  "healing": 0
+                }
+              },
+              "spellList": {
+                "Icy Touch": {
+                  "spellId": "49909",
+                  "spellName": "Icy Touch",
+                  "totalDamage": 1578,
+                  "usefulDamage": 1578,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                },
+                "Melee": {
+                  "spellId": "999999",
+                  "spellName": "Melee",
+                  "totalDamage": 3614,
+                  "usefulDamage": 3614,
+                  "totalCasts": 2,
+                  "normalHits": 0,
+                  "criticalHits": 2
+                },
+                "Necrosis": {
+                  "spellId": "51460",
+                  "spellName": "Necrosis",
+                  "totalDamage": 722,
+                  "usefulDamage": 722,
+                  "totalCasts": 2,
+                  "normalHits": 2,
+                  "criticalHits": 0
+                }
+              }
+            },
+            "Tether": {
+              "class": "Druid",
+              "playerDamage": 5888,
+              "playerTotalDamage": 5888,
+              "healing": 0,
+              "pets": {},
+              "spellList": {
+                "Mangle (Cat)": {
+                  "spellId": "48566",
+                  "spellName": "Mangle (Cat)",
+                  "totalDamage": 5014,
+                  "usefulDamage": 5014,
+                  "totalCasts": 1,
+                  "normalHits": 0,
+                  "criticalHits": 1
+                },
+                "Melee": {
+                  "spellId": "999999",
+                  "spellName": "Melee",
+                  "totalDamage": 874,
+                  "usefulDamage": 874,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                }
+              }
+            },
+            "Batstalker": {
+              "class": "Unknown",
+              "playerDamage": 1430,
+              "playerTotalDamage": 1430,
+              "healing": 0,
+              "pets": {},
+              "spellList": {
+                "Melee": {
+                  "spellId": "999999",
+                  "spellName": "Melee",
+                  "totalDamage": 455,
+                  "usefulDamage": 455,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                },
+                "Claw": {
+                  "spellId": "47468",
+                  "spellName": "Claw",
+                  "totalDamage": 975,
+                  "usefulDamage": 975,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                }
+              }
+            },
+            "Magma Totem VII": {
+              "class": "Unknown",
+              "playerDamage": 1113,
+              "playerTotalDamage": 1113,
+              "healing": 0,
+              "pets": {},
+              "spellList": {
+                "Magma Totem": {
+                  "spellId": "58735",
+                  "spellName": "Magma Totem",
+                  "totalDamage": 1113,
+                  "usefulDamage": 1113,
+                  "totalCasts": 1,
+                  "normalHits": 1,
+                  "criticalHits": 0
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "players": {
+    "Kitsunemiko": {
+      "class": "Paladin",
+      "damage": 21316,
+      "healing": 0
+    },
+    "Lord Jaraxxus": {
+      "class": "Unknown",
+      "damage": 0,
+      "healing": 0
+    },
+    "Thorvid": {
+      "class": "Death Knight",
+      "damage": 6540,
+      "healing": 0,
+      "pets": {
+        "Batstalker": {
+          "damage": 1940,
+          "healing": 0
+        }
+      }
+    },
+    "Tether": {
+      "class": "Druid",
+      "damage": 10028,
+      "healing": 0
+    },
+    "Magma Totem VII": {
+      "class": "Unknown",
+      "damage": 2226,
+      "healing": 0
+    }
+  },
+  "allGuids": {
+    "000000000000E34C": {
+      "name": "Kitsunemiko"
+    },
+    "F1300087DC214E1B": {
+      "name": "Lord Jaraxxus"
+    },
+    "000000000002B65D": {
+      "name": "Shiseioni"
+    },
+    "0000000000000000": {
+      "name": "nil"
+    },
+    "00000000000313B4": {
+      "name": "Inno"
+    },
+    "F130007250215A7D": {
+      "name": "Spirit Wolf",
+      "master_guid": "00000000000313B4"
+    },
+    "F130007250215A7E": {
+      "name": "Spirit Wolf",
+      "master_guid": "00000000000313B4"
+    },
+    "0000000000020074": {
+      "name": "Itchi"
+    },
+    "0000000000004E2D": {
+      "name": "Thorvid"
+    },
+    "000000000002E1F5": {
+      "name": "Ioiunu"
+    },
+    "000000000000CE16": {
+      "name": "Tether"
+    },
+    "F1400137FB00CC3E": {
+      "name": "Batstalker",
+      "master_guid": "0000000000004E2D"
+    },
+    "F1300079D12157E0": {
+      "name": "Healing Stream Totem IX"
+    },
+    "F1300079BF2157DE": {
+      "name": "Magma Totem VII"
+    },
+    "00000000000003F7": {
+      "name": "Galluf"
+    }
+  },
+  "petOwners": {
+    "F130007250215A7D": "00000000000313B4",
+    "F130007250215A7E": "00000000000313B4",
+    "F1400137FB00CC3E": "0000000000004E2D"
+  }
+}
