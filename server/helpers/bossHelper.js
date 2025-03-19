@@ -31,24 +31,24 @@ function getBossName(guid) {
   // console.log(` Debug: Checking boss GUID ${guid}`);
 
   if (!guid) {
-    console.warn(
-      " Warning: Received undefined or empty GUID in getBossName()."
-    );
+    // console.warn(
+    //   " Warning: Received undefined or empty GUID in getBossName()."
+    // );
     return null;
   }
 
   const bossID = extractBossID(guid);
   if (!bossID) {
-    console.warn(` Could not extract boss ID from GUID ${guid}`);
+    // console.warn(` Could not extract boss ID from GUID ${guid}`);
     return null;
   }
 
   const boss = bossesData.BOSSES_GUIDS[bossID] || null;
 
   if (!boss) {
-    console.warn(
-      ` No boss found for extracted ID ${bossID}. This might be a non-boss event.`
-    );
+    // console.warn(
+    //   ` No boss found for extracted ID ${bossID}. This might be a non-boss event.`
+    // );
     return null; //  Ensure non-boss encounters are ignored
   } else {
     // console.log(` Found boss: ${boss} for ID ${bossID}`);
@@ -66,15 +66,15 @@ function getMultiBossName(guid) {
   // console.log(` Debug: Checking multi-boss GUID ${guid}`);
 
   if (!guid) {
-    console.warn(
-      " Warning: Received undefined or empty GUID in getMultiBossName()."
-    );
+    // console.warn(
+    //   " Warning: Received undefined or empty GUID in getMultiBossName()."
+    // );
     return null;
   }
 
   const bossID = extractBossID(guid);
   if (!bossID) {
-    console.warn(` Could not extract boss ID from GUID ${guid}`);
+    // console.warn(` Could not extract boss ID from GUID ${guid}`);
     return null;
   }
 
@@ -87,7 +87,7 @@ function getMultiBossName(guid) {
     }
   }
 
-  console.warn(` No multi-boss encounter found for extracted ID ${bossID}.`);
+  // console.warn(` No multi-boss encounter found for extracted ID ${bossID}.`);
   return null;
 }
 

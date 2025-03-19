@@ -8,6 +8,7 @@ import prisma from "../config/db.js";
 export const getAttemptDetails = async (req, res) => {
   try {
     const { logId, encounterName, startTime } = req.params;
+    console.log(decodeURIComponent(startTime), "from start time");
 
     const attempt = await prisma.attempt.findFirst({
       where: {

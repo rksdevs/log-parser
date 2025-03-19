@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import axios from "axios";
 import {
   useReactTable,
@@ -10,6 +10,7 @@ import {
   ColumnDef,
   createColumnHelper,
 } from "@tanstack/react-table";
+import Link from "next/link";
 
 interface PlayerStats {
   playerName: string;
@@ -22,6 +23,9 @@ interface PlayerStats {
 export default function AttemptPage() {
   const { logId, encounter, attempt } = useParams();
   const [attemptData, setAttemptData] = useState<PlayerStats[]>([]);
+  // const pathname = usePathname();
+  // const urlToServe = pathname.split("/")[]"
+  //  /logs/73/Lord%20Jaraxxus
 
   useEffect(() => {
     if (!logId || !encounter || !attempt) return;
@@ -36,12 +40,19 @@ export default function AttemptPage() {
       .catch((error) => console.error("Error fetching attempt data:", error));
   }, [logId, encounter, attempt]);
 
-  const columnHelper = createColumnHelper();
-  /** @type import('@tanstack/react-table').columnDef<any>*/
+  const columnHelper = createColumnHelper<PlayerStats>(); // Ensure columnHelper is properly typed
 
-  const columns: ColumnDef<PlayerStats>[] = [
-    // { accessorKey: "playerName", header: "Player" },
-
+  const columns: ColumnDef<PlayerStats, string>[] = [
+    columnHelper.accessor("playerName", {
+      id: "Player",
+      cell: (info) => (
+        <Link
+          href={`/logs/${logId}/${encounter}/${attempt}/${info.getValue()}`}
+        >
+          {info.getValue()}
+        </Link>
+      ),
+    }),
     { accessorKey: "totalDamage", header: "Total Damage" },
     { accessorKey: "dps", header: "DPS" },
     { accessorKey: "totalHealing", header: "Total Healing" },

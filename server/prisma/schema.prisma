@@ -75,7 +75,7 @@ model Attempt {
 }
 
 model Player {
-  id             Int                  @id
+  id             Int                  @id @default(autoincrement())
   name           String
   class          String?
   attempts       AttemptParticipant[]

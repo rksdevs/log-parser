@@ -37,7 +37,7 @@ async function processLogFile(filePath, logId) {
   }
 
   for await (const line of rl) {
-    if (!line.trim()) continue; // Skip empty lines
+    if (!line?.trim()) continue; // Skip empty lines
 
     //  Extract timestamp and event data
     const firstSpaceIndex = line.indexOf(" ");
@@ -56,14 +56,17 @@ async function processLogFile(filePath, logId) {
     const targetName = parts[5]?.replace(/"/g, "");
     const spellId = parts[7] || null;
     const spellName = parts[8]?.replace(/"/g, "") || null;
-    console.log(eventType);
+    // console.log(eventType);
+
+    //skipping missed events temporarily
+    if (eventType.includes("MISSED")) continue;
 
     //  Store GUIDs
     if (!ALL_GUIDS[sourceGUID]) ALL_GUIDS[sourceGUID] = { name: sourceName };
     if (!ALL_GUIDS[targetGUID]) ALL_GUIDS[targetGUID] = { name: targetName };
 
     //  Detect Summoned Pets
-    if (eventType.trim() === "SPELL_SUMMON") {
+    if (eventType?.trim() === "SPELL_SUMMON") {
       // console.log(
       //   `🐾 Summon detected: ${targetName} is summoned by ${sourceName}`
       // );
@@ -101,9 +104,9 @@ async function processLogFile(filePath, logId) {
     let bossName = getBossName(targetGUID) || getBossName(sourceGUID);
 
     if (!bossName) {
-      console.warn(
-        ` Skipping non-boss event for GUID ${targetGUID} & ${sourceGUID}`
-      );
+      // console.warn(
+      //   ` Skipping non-boss event for GUID ${targetGUID} & ${sourceGUID}`
+      // );
       continue; //  Skip this event if it's not related to a boss
     }
 
@@ -124,54 +127,54 @@ async function processLogFile(filePath, logId) {
       let damageBreakdown = {};
       let healingBreakdown = {};
       if (eventType.includes("DAMAGE")) {
-        console.log(parts[0]);
-        if (parts[0].trim() === "SWING_DAMAGE") {
-          console.log(
-            "From Swing event: -",
-            parts[7],
-            parts[8],
-            parts[10],
-            parts[11],
-            parts[12],
-            parts[13],
-            parts[14],
-            parts[15]
-          );
+        // console.log(parts[0]);
+        if (parts[0]?.trim() === "SWING_DAMAGE") {
+          // console.log(
+          //   "From Swing event: -",
+          //   parts[7],
+          //   parts[8],
+          //   parts[10],
+          //   parts[11],
+          //   parts[12],
+          //   parts[13],
+          //   parts[14],
+          //   parts[15]
+          // );
           damageBreakdown.amount = parseInt(parts[7]);
           damageBreakdown.overkill = parseInt(parts[8]);
           damageBreakdown.resisted = parseInt(parts[10]);
           damageBreakdown.blocked = parseInt(parts[11]);
           damageBreakdown.absorbed = parseInt(parts[12]);
-          damageBreakdown.critical = parts[13].trim() === "nil" ? false : true;
-          damageBreakdown.glancing = parts[14].trim() === "nil" ? false : true;
-          damageBreakdown.crushing = parts[15].trim() === "nil" ? false : true;
+          damageBreakdown.critical = parts[13]?.trim() === "nil" ? false : true;
+          damageBreakdown.glancing = parts[14]?.trim() === "nil" ? false : true;
+          damageBreakdown.crushing = parts[15]?.trim() === "nil" ? false : true;
         } else {
-          console.log(
-            "From Non-swing event: -",
-            parts[10],
-            parts[11],
-            parts[13],
-            parts[14],
-            parts[15],
-            parts[16],
-            parts[17],
-            parts[18]
-          );
+          // console.log(
+          //   "From Non-swing event: -",
+          //   parts[10],
+          //   parts[11],
+          //   parts[13],
+          //   parts[14],
+          //   parts[15],
+          //   parts[16],
+          //   parts[17],
+          //   parts[18]
+          // );
           damageBreakdown.amount = parseInt(parts[10]);
           damageBreakdown.overkill = parseInt(parts[11]);
           damageBreakdown.resisted = parseInt(parts[13]);
           damageBreakdown.blocked = parseInt(parts[14]);
           damageBreakdown.absorbed = parseInt(parts[15]);
-          damageBreakdown.critical = parts[16].trim() === "nil" ? false : true;
-          damageBreakdown.glancing = parts[17].trim() === "nil" ? false : true;
-          damageBreakdown.crushing = parts[18].trim() === "nil" ? false : true;
+          damageBreakdown.critical = parts[16]?.trim() === "nil" ? false : true;
+          damageBreakdown.glancing = parts[17]?.trim() === "nil" ? false : true;
+          damageBreakdown.crushing = parts[18]?.trim() === "nil" ? false : true;
         }
       }
       if (eventType.includes("HEAL")) {
         healingBreakdown.amount = parseInt(parts[10]);
         healingBreakdown.overHealing = parseInt(parts[11]);
         healingBreakdown.absorbed = parseInt(parts[12]);
-        healingBreakdown.critical = parts[13].trim() === "nil" ? false : true;
+        healingBreakdown.critical = parts[13]?.trim() === "nil" ? false : true;
       }
 
       bossLogs[bossName].push({
@@ -230,7 +233,7 @@ async function processLogFile(filePath, logId) {
 
       //  If ownerName is undefined, log a warning and skip processing
       if (!ownerName) {
-        console.warn(` Owner GUID ${ownerGUID} not found in ALL_GUIDS`);
+        // console.warn(` Owner GUID ${ownerGUID} not found in ALL_GUIDS`);
         // continue;
       }
 
@@ -302,7 +305,7 @@ async function processLogFile(filePath, logId) {
     // );
 
     if (!logs || logs.length === 0) {
-      console.warn(` Skipping ${boss} because no logs found.`);
+      // console.warn(` Skipping ${boss} because no logs found.`);
       continue;
     }
     // {timestamp,

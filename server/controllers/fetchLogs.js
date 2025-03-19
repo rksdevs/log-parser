@@ -14,7 +14,7 @@ function formatTimestamp(timestamp) {
   let seconds = String(date.getSeconds()).padStart(2, "0");
   let milliseconds = String(date.getMilliseconds())
     .padStart(3, "0")
-    .slice(0, 2); // Keep only two digits
+    .slice(0, 3); // Keep only two digits
 
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
 }

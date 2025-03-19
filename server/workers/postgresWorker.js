@@ -20,17 +20,60 @@ const postgresWorker = new Worker(
       let encounterInserts = [];
       let bossInserts = [];
       let attemptInserts = [];
-      let playerInserts = [];
       let attemptParticipantInserts = [];
-      let logInserts = [];
       let spellStatisticInserts = [];
+      let logInserts = [];
 
-      // Batch Fetch Existing Players to Avoid Repeated Lookups
+      /** ==========================
+       * 1️⃣ Fetch Existing Players in Bulk
+       ========================== **/
+      console.log(`📌 Fetching existing players from DB...`);
       let existingPlayers = await prisma.player.findMany({
         select: { id: true, name: true },
       });
       let playerMap = new Map(existingPlayers.map((p) => [p.name, p.id]));
 
+      /** ==========================
+       * 2️⃣ Collect Unique Players Before Insert
+       ========================== **/
+      let newPlayers = new Set(); // Store unique player names
+      let uniquePlayersData = []; // Prepare player insert data
+
+      for (const encounterName in structuredFights) {
+        for (const bossName in structuredFights[encounterName]) {
+          for (const attempt of structuredFights[encounterName][bossName]) {
+            for (const playerName in attempt.players) {
+              if (!playerMap.has(playerName)) {
+                if (!newPlayers.has(playerName)) {
+                  newPlayers.add(playerName);
+                  uniquePlayersData.push({
+                    name: playerName,
+                    class: attempt.players[playerName].class,
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      /** ==========================
+       * 3️⃣ Bulk Insert New Players & Update `playerMap`
+       ========================== **/
+      if (uniquePlayersData.length > 0) {
+        console.log(`📌 Inserting ${uniquePlayersData.length} new players...`);
+        await prisma.player.createMany({ data: uniquePlayersData });
+
+        // Fetch all players again and update the `playerMap`
+        let updatedPlayers = await prisma.player.findMany({
+          select: { id: true, name: true },
+        });
+        playerMap = new Map(updatedPlayers.map((p) => [p.name, p.id]));
+      }
+
+      /** ==========================
+       * 4️⃣ Process Encounters, Attempts & AttemptParticipants Efficiently
+       ========================== **/
       for (const encounterName in structuredFights) {
         const bosses = structuredFights[encounterName];
 
@@ -60,13 +103,8 @@ const postgresWorker = new Worker(
               let playerId = playerMap.get(playerName);
 
               if (!playerId) {
-                playerId = playerInserts.length + 1;
-                playerInserts.push({
-                  id: playerId,
-                  name: playerName,
-                  class: attempt.players[playerName].class,
-                });
-                playerMap.set(playerName, playerId);
+                console.error(`❌ Player ${playerName} not found! Skipping.`);
+                continue; // Skip if player isn't found (shouldn't happen)
               }
 
               attemptParticipantInserts.push({
@@ -76,8 +114,8 @@ const postgresWorker = new Worker(
                 healingDone: attempt.players[playerName].healing || 0,
               });
 
+              // Process Spell Statistics
               for (const spell in attempt.players[playerName].spellList) {
-                console.log("from spell inserts", spell);
                 spellStatisticInserts.push({
                   attemptId,
                   playerId,
@@ -98,24 +136,13 @@ const postgresWorker = new Worker(
                 });
               }
             }
-
-            for (const logEvent of attempt.logs) {
-              // console.log(logEvent, "from postgres worker");
-              logInserts.push({
-                attemptId,
-                timestamp: new Date(logEvent.timestamp),
-                sourceGUID: logEvent.sourceGUID,
-                targetGUID: logEvent.targetGUID,
-                spellId: logEvent.spellId ? parseInt(logEvent.spellId) : null,
-                spellName: logEvent.spellName,
-                eventType: logEvent.eventType,
-              });
-            }
           }
         }
       }
 
-      // Bulk Insert Data into Database
+      /** ==========================
+       * 5️⃣ Bulk Insert Data Efficiently
+       ========================== **/
       console.log(`📌 Inserting ${encounterInserts.length} encounters...`);
       await prisma.encounter.createMany({ data: encounterInserts });
 
@@ -124,9 +151,6 @@ const postgresWorker = new Worker(
 
       console.log(`📌 Inserting ${attemptInserts.length} attempts...`);
       await prisma.attempt.createMany({ data: attemptInserts });
-
-      console.log(`📌 Inserting ${playerInserts.length} players...`);
-      await prisma.player.createMany({ data: playerInserts });
 
       console.log(
         `📌 Inserting ${attemptParticipantInserts.length} attempt participants...`
@@ -138,31 +162,19 @@ const postgresWorker = new Worker(
       console.log(
         `📌 Inserting ${spellStatisticInserts.length} spell statistics...`
       );
-      await prisma.spellStatistic.createMany({
-        data: spellStatisticInserts,
-      });
-
-      console.log(`📌 Inserting ${logInserts.length} logs...`);
-      await prisma.log.createMany({ data: logInserts });
-
-      // ✅ Update `uploadStatus` after successful insert
-      await prisma.logs.update({
-        where: { logId },
-        data: {
-          uploadStatus: "completed",
-          dbUploadCompleteAt: new Date(Date.now()),
-        },
-      });
+      await prisma.spellStatistic.createMany({ data: spellStatisticInserts });
 
       console.log(`✅ PostgreSQL save completed for log ID: ${logId}`);
+
+      await prisma.logs.update({
+        where: { logId },
+        data: { uploadStatus: "completed", dbUploadCompleteAt: new Date() },
+      });
     } catch (error) {
       console.error("❌ Error saving log to PostgreSQL:", error);
       await prisma.logs.update({
         where: { logId },
-        data: {
-          uploadStatus: "failed",
-          dbUploadCompleteAt: new Date(Date.now()),
-        },
+        data: { uploadStatus: "failed", dbUploadCompleteAt: new Date() },
       });
     }
   },

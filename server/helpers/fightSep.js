@@ -120,7 +120,7 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
 //       //swing damage
 
 //       const damageAmount =
-// (eventType.trim() === "SWING_DAMAGE"
+// (eventType?.trim() === "SWING_DAMAGE"
 //   ? parseInt(log.raw.split(",")[7])
 //   : parseInt(log.raw.split(",")[10])) || 0;
 //       attemptPlayers[sourceName].damage += damageAmount; //  No more undefined errors
@@ -157,7 +157,7 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
 //         //  Track Pet Damage
 //         if (eventType.includes("DAMAGE")) {
 //           const petDamageAmount =
-//             (eventType.trim() === "SWING_DAMAGE"
+//             (eventType?.trim() === "SWING_DAMAGE"
 //               ? parseInt(log.raw.split(",")[7])
 //               : parseInt(log.raw.split(",")[10])) || 0;
 //           attemptPlayers[ownerName].pets[petName].damage += petDamageAmount;
@@ -257,7 +257,7 @@ function processAttempt(
         damageBreakdown.absorbed;
       let totalUsefulDamageForCurrentEvent =
         damageBreakdown.amount - damageBreakdown.overkill;
-      if (eventType.trim() === "SWING_DAMAGE") {
+      if (eventType?.trim() === "SWING_DAMAGE") {
         //check if the player's spelllist already has the swing damage  entry
 
         if (sourceName && !attemptPlayers[sourceName].spellList["Melee"]) {
@@ -322,7 +322,7 @@ function processAttempt(
     // if (sourceName && eventType.includes("DAMAGE")) {
     //   // const damageAmount = parseInt(raw.split(",")[10]) || 0;
     //   const damageAmount =
-    //     (eventType.trim() === "SWING_DAMAGE"
+    //     (eventType?.trim() === "SWING_DAMAGE"
     //       ? parseInt(raw.split(",")[7])
     //       : parseInt(raw.split(",")[10])) || 0;
     //   attemptPlayers[sourceName].playerDamage += damageAmount; //  Only player's damage
@@ -368,7 +368,7 @@ function processAttempt(
         if (eventType.includes("DAMAGE")) {
           //   const petDamageAmount = parseInt(raw.split(",")[10]) || 0;
           const petDamageAmount =
-            (eventType.trim() === "SWING_DAMAGE"
+            (eventType?.trim() === "SWING_DAMAGE"
               ? parseInt(raw.split(",")[7])
               : parseInt(raw.split(",")[10])) || 0;
           attemptPlayers[ownerName].pets[petName].damage += petDamageAmount;
