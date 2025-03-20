@@ -1,0 +1,10 @@
+{
+  "encounterName": "Lord Jaraxxus",
+  "bosses": [
+    {
+      "bossName": "Lord Jaraxxus",
+      "attempts": 2,
+      "playersInvolved": 5
+    }
+  ]
+}
