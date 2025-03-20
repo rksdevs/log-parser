@@ -8,14 +8,27 @@ import { PrismaClient } from "@prisma/client";
 import { fileURLToPath } from "url";
 import AdmZip from "adm-zip";
 import { processLogFile } from "../parsers/logParser.js";
+import Redis from "ioredis";
 
 dotenv.config();
 const prisma = new PrismaClient();
+const redisPublisher = new Redis(
+  process.env.REDIS_URL || "redis://localhost:6379"
+);
 
 // Initialize PostgreSQL Queue
 const postgresQueue = new Queue("postgres-save-queue", {
   connection: redisConnection,
 });
+
+// ✅ Function to Publish Events to Redis Instead of Emitting Directly
+const publishProgress = async (logId, stage, progress) => {
+  const message = JSON.stringify({ stage, progress });
+  console.log(
+    `🚀 Publishing progress update to Redis: log:${logId} - ${stage} (${progress}%)`
+  );
+  await redisPublisher.publish(`log:${logId}`, message);
+};
 
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -60,6 +73,9 @@ const logWorker = new Worker(
     try {
       const { logId, s3FilePath } = job.data;
       console.log(` Processing log (ID: ${logId})...`);
+
+      process.env.WORKER = "true";
+      publishProgress(logId, "fetching", 10);
       console.log(` Fetching file from S3: ${s3FilePath}`);
       const userId = "12345";
 
@@ -77,6 +93,8 @@ const logWorker = new Worker(
         throw new Error("Log file is empty or inaccessible");
       }
 
+      publishProgress(logId, "unzip", 20);
+
       console.log(` Successfully fetched file from S3`);
 
       //  Ensure the /tmp/ directory exists (Cross-platform fix)
@@ -89,6 +107,7 @@ const logWorker = new Worker(
       const tempZipPath = path.join(tempDir, `log-${logId}.zip`);
       fs.writeFileSync(tempZipPath, zipFile.Body);
 
+      publishProgress(logId, "unzip", 50);
       console.log(` .zip file saved locally: ${tempZipPath}`);
 
       //  Extract .zip file
@@ -100,11 +119,14 @@ const logWorker = new Worker(
       const zip = new AdmZip(tempZipPath);
       zip.extractAllTo(extractPath, true);
 
+      publishProgress(logId, "unzip", 100);
       console.log(` Extracted files to: ${extractPath}`);
 
       //  Iterate over extracted files
       const extractedFiles = fs.readdirSync(extractPath);
       console.log(` Found ${extractedFiles.length} log files in .zip`);
+
+      publishProgress(logId, "parsing", 10);
 
       for (const fileName of extractedFiles) {
         const filePath = path.join(extractPath, fileName);
@@ -115,6 +137,9 @@ const logWorker = new Worker(
 
           //  Parse the log file and structure encounters
           const structuredFights = await processLogFile(filePath, logId);
+
+          // io.emit(`log:${logId}`, { stage: "parsing", progress: 50 });
+          publishProgress(logId, "parsing", 50);
 
           console.log(` Log parsing completed for log ID: ${logId}`);
 
@@ -131,16 +156,9 @@ const logWorker = new Worker(
                 structuredFights,
               }), // Save to PostgreSQL
             ]);
-          }
 
-          //   await prisma.logs.update({
-          //     where: { logId },
-          //     data: {
-          //       processingStatus: "completed",
-          //       structuredDataPath: `logs/json/log-${logId}.json`, // Store structured log path
-          //       processedAt: new Date(), // Timestamp for completion
-          //     },
-          //   });
+            publishProgress(logId, "saving", 10);
+          }
         } else {
           throw new Error(
             ` Invalid file detected: ${fileName}. Only .txt or .log files are allowed.`
@@ -148,12 +166,8 @@ const logWorker = new Worker(
         }
       }
 
-      //update db that the log has been parsed
-      // await prisma.logs.update({
-      //   where: { logId },
-      //   data: { processingStatus: "completed" },
-      // });
-
+      // io.emit(`log:${logId}`, { stage: "completed", progress: 100 });
+      publishProgress(logId, "completed", 100);
       console.log(` Processing completed for log ID: ${logId}`);
 
       //  Cleanup: Delete extracted files and zip
@@ -168,6 +182,9 @@ const logWorker = new Worker(
         where: { logId: job.data.logId },
         data: { processingStatus: "failed" },
       });
+
+      //Emit error event
+      publishProgress(job.data.logId, "error", error.message);
     }
   },
   { connection: redisConnection }

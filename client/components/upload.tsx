@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 // import { headers } from "next/headers";
 import {
   Select,
@@ -24,6 +24,9 @@ import { toast } from "sonner";
 
 import { LogsMetadata } from "@/types";
 import { useRouter } from "next/navigation";
+import { io, Socket } from "socket.io-client";
+
+// const socket = io("http://localhost:8000");
 
 export function Upload({
   className,
@@ -35,6 +38,10 @@ export function Upload({
   const [serverName, setServerName] = useState<string>("");
   const [logId, setLogId] = useState<string>("");
   const [status, setStatus] = useState<string>("processing");
+  const [progress, setProgress] = useState({ stage: "", progress: 0 });
+
+  const socketRef = useRef<Socket | null>(null);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       //  Enforce .zip file uploads
@@ -66,7 +73,8 @@ export function Upload({
   //   }
   // };
 
-  const handleNavigation = (logId: string) => {
+  const handleNavigation = () => {
+    if (!logId) return;
     router.push(`/logs/${logId}`);
   };
 
@@ -137,26 +145,64 @@ export function Upload({
   }, [selectedFile, serverName]);
 
   // useEffect(() => {
-  //   if (logId) handleNavigation(logId);
+  //   if (!logId) return;
+  //   const interval = setInterval(async () => {
+  //     try {
+  //       const res = await axios.get(
+  //         `http://localhost:8000/api/logs/redis/status/${logId}`
+  //       );
+  //       if (res.data.status === "completed") {
+  //         setStatus("completed");
+  //         clearInterval(interval);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching log status:", error);
+  //     }
+  //   }, 5000);
+
+  //   return () => clearInterval(interval);
+  // }, [logId]);
+
+  // useEffect(() => {
+  //   if (!logId) return;
+
+  //   if (!socketRef.current) {
+  //     socketRef.current = io("http://localhost:8000");
+  //   }
+
+  //   const socket = socketRef.current;
+
+  //   socket.on(`log:${logId}`, (data) => {
+  //     console.log("Progress update: ", data);
+  //     setProgress(data);
+  //   });
+
+  //   return () => {
+  //     socket?.off(`log:${logId}`);
+  //   };
   // }, [logId]);
 
   useEffect(() => {
     if (!logId) return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:8000/api/logs/redis/status/${logId}`
-        );
-        if (res.data.status === "completed") {
-          setStatus("completed");
-          clearInterval(interval);
-        }
-      } catch (error) {
-        console.error("Error fetching log status:", error);
-      }
-    }, 5000);
 
-    return () => clearInterval(interval);
+    console.log("🔍 Listening for WebSocket event:", `log:${logId}`);
+
+    if (!socketRef.current) {
+      socketRef.current = io("http://localhost:8000", {
+        reconnectionAttempts: 5, // ✅ Try reconnecting 5 times
+        reconnectionDelay: 2000, // ✅ Wait 2 seconds between reconnects
+      });
+    }
+
+    const socket = socketRef.current;
+    socket.on(`log:${logId}`, (data) => {
+      console.log("Progress Update Received:", data);
+      setProgress(data);
+    });
+
+    return () => {
+      socket.off(`log:${logId}`);
+    };
   }, [logId]);
 
   return (
@@ -206,18 +252,28 @@ export function Upload({
               <Button type="submit" className="w-full" disabled={!enableUpload}>
                 Upload
               </Button>
-              <h2>Log Processing Status: {status}</h2>
-              {status === "completed" && (
-                <Button
-                  className="w-full"
-                  disabled={status !== "completed"}
-                  onClick={() => handleNavigation(logId)}
-                >
+            </div>
+          </form>
+          {logId && (
+            <div className="mt-4">
+              <h3>Processing Log {logId}</h3>
+              <p>Stage: {progress.stage}</p>
+              <p>Progress: {progress.progress}%</p>
+
+              <div className="w-full bg-gray-200 h-4 rounded-full mt-2">
+                <div
+                  className="bg-blue-500 h-full rounded-full"
+                  style={{ width: `${progress.progress}%` }}
+                ></div>
+              </div>
+
+              {progress.stage === "completed" && (
+                <Button className="mt-4" onClick={handleNavigation}>
                   View Log
                 </Button>
               )}
             </div>
-          </form>
+          )}
         </CardContent>
       </Card>
     </div>

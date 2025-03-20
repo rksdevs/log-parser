@@ -1,0 +1,62 @@
+[
+  {
+    "id": 145449,
+    "attemptId": "125-1",
+    "playerId": 67,
+    "playerName": "Kitsunemiko",
+    "spellId": "67485",
+    "spellName": "Hand of Reckoning",
+    "totalDamage": 4802,
+    "totalCasts": 1,
+    "normalHits": 0,
+    "criticalHits": 1,
+    "periodicHits": 0,
+    "periodicCrits": 0,
+    "usefulDamage": 4802
+  },
+  {
+    "id": 145450,
+    "attemptId": "125-1",
+    "playerId": 67,
+    "playerName": "Kitsunemiko",
+    "spellId": "999999",
+    "spellName": "Melee",
+    "totalDamage": 776,
+    "totalCasts": 1,
+    "normalHits": 1,
+    "criticalHits": 0,
+    "periodicHits": 0,
+    "periodicCrits": 0,
+    "usefulDamage": 776
+  },
+  {
+    "id": 145451,
+    "attemptId": "125-1",
+    "playerId": 67,
+    "playerName": "Kitsunemiko",
+    "spellId": "53595",
+    "spellName": "Hammer of the Righteous",
+    "totalDamage": 5709,
+    "totalCasts": 1,
+    "normalHits": 0,
+    "criticalHits": 1,
+    "periodicHits": 0,
+    "periodicCrits": 0,
+    "usefulDamage": 5709
+  },
+  {
+    "id": 145452,
+    "attemptId": "125-1",
+    "playerId": 67,
+    "playerName": "Kitsunemiko",
+    "spellId": "53739",
+    "spellName": "Seal of Corruption",
+    "totalDamage": 142,
+    "totalCasts": 1,
+    "normalHits": 1,
+    "criticalHits": 0,
+    "periodicHits": 0,
+    "periodicCrits": 0,
+    "usefulDamage": 142
+  }
+]
