@@ -1,7 +1,12 @@
 import express from "express";
-import { fetchLogs } from "../controllers/fetchLogs.js";
+import {
+  fetchAllLogs,
+  fetchLogs,
+  fetchLogsFromDb,
+} from "../controllers/fetchLogs.js";
 const router = express.Router();
 
-router.get("/:logId", fetchLogs);
+router.get("/all-logs", fetchAllLogs);
+router.get("/:logId", fetchLogsFromDb);
 
 export default router;

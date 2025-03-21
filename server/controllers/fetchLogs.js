@@ -1,4 +1,5 @@
 import { getLogFromRedis } from "../services/logService.js";
+import prisma from "../config/db.js";
 
 //*GET /api/logs/{logId}
 //*GET specific log from redis
@@ -57,5 +58,117 @@ export const fetchLogs = async (req, res) => {
     console.log(error);
     res.status(500);
     throw new Error("Something went wrong with fetch logs");
+  }
+};
+
+export const fetchAllLogs = async (req, res) => {
+  try {
+    const logs = await prisma.logsMain.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.status(200).json(
+      logs.map((log) => ({
+        logId: log.logId,
+        date: log.firstEncounter.toISOString(),
+        players: JSON.parse(log.playersInvolved),
+        uploadStatus: log.uploadStatus,
+      }))
+    );
+  } catch (error) {
+    console.error("Error fetching logs:", error);
+    return res.status(500).json({ message: "Failed to fetch logs" });
+  }
+};
+
+export const fetchLogsFromDb = async (req, res) => {
+  const { logId } = req.params;
+  console.log(`Fetching log from DB: ${logId}`);
+
+  try {
+    // ✅ Fetch log details from LogsMain
+    const logEntry = await prisma.logsMain.findUnique({
+      where: { logId: parseInt(logId) },
+      include: {
+        log: {
+          include: {
+            encounters: {
+              include: {
+                bosses: {
+                  include: {
+                    attempts: {
+                      include: {
+                        players: {
+                          include: { player: true },
+                        },
+                        spellStats: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!logEntry) {
+      return res.status(404).json({ message: "Log not found in database" });
+    }
+
+    // ✅ Convert DB data to Redis-style structured format
+    const logData = {};
+
+    for (const encounter of logEntry.log.encounters) {
+      if (!logData[encounter.name]) {
+        logData[encounter.name] = {};
+      }
+
+      for (const boss of encounter.bosses) {
+        if (!logData[encounter.name][boss.name]) {
+          logData[encounter.name][boss.name] = [];
+        }
+
+        for (const attempt of boss.attempts) {
+          logData[encounter.name][boss.name].push({
+            startTime: attempt.startTime,
+            endTime: attempt.endTime,
+            players: attempt.players.map((p) => p.player.name),
+            spellStatistics: attempt.spellStats,
+          });
+        }
+      }
+    }
+
+    // ✅ Generate Navigation Data (same as Redis structure)
+    const navigationData = Object.entries(logData).map(
+      ([encounterName, bosses]) => ({
+        encounter: encounterName,
+        url: `/logs/${logId}/${encodeURIComponent(encounterName)}`,
+        isActive: true, // Keep navigation behavior same
+        bosses: Object.entries(bosses).map(([bossName, attempts]) => ({
+          name: `${bossName} - Heroic`,
+          attempts: attempts.map((attempt, index) => ({
+            name: `${bossName} - Attempt ${index + 1}`,
+            start: formatTimestamp(attempt.startTime),
+            end: formatTimestamp(attempt.endTime),
+            url: `/logs/${logId}/${encodeURIComponent(
+              encounterName
+            )}/${formatTimestamp(attempt.startTime)}`,
+          })),
+        })),
+      })
+    );
+
+    return res.status(200).json({
+      logData,
+      navigationData,
+    });
+  } catch (error) {
+    console.error("Error fetching log from DB:", error);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong with fetch logs" });
   }
 };

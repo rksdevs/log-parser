@@ -40,6 +40,7 @@ model Logs {
   dbUploadCompleteAt DateTime?
   // New relationship to encounters
   encounters         Encounter[]
+  LogsMain           LogsMain?
 }
 
 // New Tables for Storing Structured Data
@@ -120,4 +121,16 @@ model SpellStatistic {
   periodicHits  Int     @default(0)
   periodicCrits Int     @default(0)
   usefulDamage  Int     @default(0)
+}
+
+model LogsMain {
+  id              Int      @id @default(autoincrement()) // ✅ Integer ID
+  logId           Int      @unique // ✅ Matches Logs.logId (Integer)
+  firstEncounter  DateTime
+  playersInvolved String
+  uploadStatus    String   @default("processing")
+  createdAt       DateTime @default(now())
+
+  // ✅ Ensure the referenced field matches exactly
+  log Logs @relation(fields: [logId], references: [logId], onDelete: Cascade)
 }

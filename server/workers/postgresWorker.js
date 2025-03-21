@@ -1,8 +1,21 @@
 import { Worker } from "bullmq";
 import { redisConnection } from "../config/redis.js";
 import { PrismaClient } from "@prisma/client";
+import Redis from "ioredis";
 
 const prisma = new PrismaClient();
+const redisPublisher = new Redis(
+  process.env.REDIS_URL || "redis://localhost:6379"
+);
+
+// ✅ Function to Publish Events to Redis Instead of Emitting Directly
+const publishProgress = async (logId, stage, progress) => {
+  const message = JSON.stringify({ stage, progress });
+  console.log(
+    `🚀 Publishing progress update to Redis: log:${logId} - ${stage} (${progress}%)`
+  );
+  await redisPublisher.publish(`log:${logId}`, message);
+};
 
 const postgresWorker = new Worker(
   "postgres-save-queue",
@@ -38,6 +51,8 @@ const postgresWorker = new Worker(
        ========================== **/
       let newPlayers = new Set(); // Store unique player names
       let uniquePlayersData = []; // Prepare player insert data
+
+      publishProgress(logId, "saving to database", 20);
 
       for (const encounterName in structuredFights) {
         for (const bossName in structuredFights[encounterName]) {
@@ -140,6 +155,8 @@ const postgresWorker = new Worker(
         }
       }
 
+      publishProgress(logId, "saving to database", 50);
+
       /** ==========================
        * 5️⃣ Bulk Insert Data Efficiently
        ========================== **/
@@ -166,16 +183,63 @@ const postgresWorker = new Worker(
 
       console.log(`✅ PostgreSQL save completed for log ID: ${logId}`);
 
+      publishProgress(logId, "saving to database", 90);
+
+      // await prisma.logs.update({
+      //   where: { logId },
+      //   data: { uploadStatus: "completed", dbUploadCompleteAt: new Date() },
+      // });
+
+      const firstEncounter =
+        structuredFights && Object.keys(structuredFights).length > 0
+          ? new Date(
+              Object.values(structuredFights)[0]?.[
+                Object.keys(Object.values(structuredFights)[0])[0]
+              ]?.[0]?.startTime
+            )
+          : null;
+
+      // Get list of players in the log
+      const allPlayers = new Set();
+      for (const encounter of Object.values(structuredFights)) {
+        for (const boss of Object.values(encounter)) {
+          for (const attempt of boss) {
+            Object.keys(attempt.players).forEach((player) =>
+              allPlayers.add(player)
+            );
+          }
+        }
+      }
+
+      const allPlayersArray = [...allPlayers].filter(
+        (player) => typeof player === "string" && player.trim() !== ""
+      );
+
       await prisma.logs.update({
         where: { logId },
         data: { uploadStatus: "completed", dbUploadCompleteAt: new Date() },
       });
+
+      // ✅ Store log reference in LogsMain
+      await prisma.logsMain.create({
+        data: {
+          logId,
+          firstEncounter,
+          playersInvolved: JSON.stringify(allPlayersArray), // Store as JSON
+          uploadStatus: "completed",
+        },
+      });
+
+      console.log(`✅ Log stored in LogsMain with ID: ${logId}`);
+      publishProgress(logId, "saving to database completed", 100);
     } catch (error) {
       console.error("❌ Error saving log to PostgreSQL:", error);
       await prisma.logs.update({
         where: { logId },
         data: { uploadStatus: "failed", dbUploadCompleteAt: new Date() },
       });
+
+      publishProgress(job.data.logId, "error", error.message);
     }
   },
   { connection: redisConnection }

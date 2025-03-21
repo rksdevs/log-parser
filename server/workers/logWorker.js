@@ -150,7 +150,7 @@ const logWorker = new Worker(
             // await saveToRedis(userId, logId, structuredFights);
             // Run saveToRedis and PostgreSQL job simultaneously
             await Promise.all([
-              saveToRedis(userId, logId, structuredFights), // Save to Redis
+              // saveToRedis(userId, logId, structuredFights), // Save to Redis
               postgresQueue.add("save-to-postgres", {
                 logId,
                 structuredFights,

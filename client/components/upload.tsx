@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -25,6 +26,8 @@ import { toast } from "sonner";
 import { LogsMetadata } from "@/types";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
+import { Progress } from "./ui/progress";
+import { Badge } from "./ui/badge";
 
 // const socket = io("http://localhost:8000");
 
@@ -53,25 +56,6 @@ export function Upload({
       setSelectedFile(e.target.files[0]);
     }
   };
-  // const handleClick = async (e: any) => {
-  //   e.preventDefault();
-  //   if (!selectedFile) return;
-  //   const formData = new FormData();
-  //   formData.append("file", selectedFile);
-
-  //   try {
-  //     const res = await axios.post(
-  //       "http://localhost:8000/api/upload",
-  //       formData,
-  //       {
-  //         headers: { "Content-Type": "multipart/form-data" },
-  //       }
-  //     );
-  //     console.log("Upload successful:", res.data);
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // };
 
   const handleNavigation = () => {
     if (!logId) return;
@@ -143,44 +127,6 @@ export function Upload({
   useEffect(() => {
     if (selectedFile && serverName) setEnableUpload(true);
   }, [selectedFile, serverName]);
-
-  // useEffect(() => {
-  //   if (!logId) return;
-  //   const interval = setInterval(async () => {
-  //     try {
-  //       const res = await axios.get(
-  //         `http://localhost:8000/api/logs/redis/status/${logId}`
-  //       );
-  //       if (res.data.status === "completed") {
-  //         setStatus("completed");
-  //         clearInterval(interval);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching log status:", error);
-  //     }
-  //   }, 5000);
-
-  //   return () => clearInterval(interval);
-  // }, [logId]);
-
-  // useEffect(() => {
-  //   if (!logId) return;
-
-  //   if (!socketRef.current) {
-  //     socketRef.current = io("http://localhost:8000");
-  //   }
-
-  //   const socket = socketRef.current;
-
-  //   socket.on(`log:${logId}`, (data) => {
-  //     console.log("Progress update: ", data);
-  //     setProgress(data);
-  //   });
-
-  //   return () => {
-  //     socket?.off(`log:${logId}`);
-  //   };
-  // }, [logId]);
 
   useEffect(() => {
     if (!logId) return;
@@ -256,22 +202,36 @@ export function Upload({
           </form>
           {logId && (
             <div className="mt-4">
-              <h3>Processing Log {logId}</h3>
-              <p>Stage: {progress.stage}</p>
-              <p>Progress: {progress.progress}%</p>
-
-              <div className="w-full bg-gray-200 h-4 rounded-full mt-2">
-                <div
-                  className="bg-blue-500 h-full rounded-full"
-                  style={{ width: `${progress.progress}%` }}
-                ></div>
-              </div>
-
-              {progress.stage === "completed" && (
-                <Button className="mt-4" onClick={handleNavigation}>
-                  View Log
-                </Button>
-              )}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle>
+                    Processing Log: <Badge>{logId}</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    <span className="font-medium">Stage:</span> {progress.stage}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>
+                    <span className="font-medium">Status: </span>{" "}
+                    {progress.stage === "saving to database completed"
+                      ? "Completed"
+                      : `${progress.progress}%`}
+                  </p>
+                  {progress.stage !== "saving to database completed" && (
+                    <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
+                      <Progress value={progress.progress} />
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter>
+                  {progress.stage === "saving to database completed" && (
+                    <Button className="w-full" onClick={handleNavigation}>
+                      View Log
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
             </div>
           )}
         </CardContent>

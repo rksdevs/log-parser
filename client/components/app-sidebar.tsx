@@ -160,7 +160,7 @@ export function AppSidebar({
   navItems,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { navItems: any }) {
-  console.log(navItems);
+  // console.log(navItems);
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
