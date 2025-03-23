@@ -13,14 +13,13 @@ import {
 
 interface SpellStats {
   spellName: string;
+  icon: string; // ✅ NEW
   totalDamage: number;
   usefulDamage: number;
   totalCasts: number;
   normalHits: number;
   criticalHits: number;
 }
-
-// http://localhost:8000/api/logs/73/encounters/Lord%20Jaraxxus/attempts/2001-01-20%2001%3A07%3A05.36/players/Kitsunemiko
 
 export default function PlayerSpellsPage() {
   const { logId, encounter, attempt, playerName } = useParams();
@@ -34,9 +33,9 @@ export default function PlayerSpellsPage() {
       )
       .then((response) => {
         console.log("API response:", response.data);
-        // Extract only the needed fields
         const filteredData = response.data.map((spell: any) => ({
           spellName: spell.spellName,
+          icon: spell.icon,
           totalDamage: spell.totalDamage,
           usefulDamage: spell.usefulDamage,
           totalCasts: spell.totalCasts,
@@ -51,18 +50,33 @@ export default function PlayerSpellsPage() {
   const columnHelper = createColumnHelper<SpellStats>();
 
   const columns: ColumnDef<SpellStats>[] = [
-    { accessorKey: "spellName", header: "Spell Name" },
+    {
+      header: "Spell",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <img
+            src={`${
+              row.original.icon === "inv_misc_questionmark"
+                ? "/icons/inv_misc_questionmark.png"
+                : row.original.icon === "Melee"
+                ? "/icons/melee.webp"
+                : `/icons/${row.original.icon}.jpg`
+            }`}
+            alt={row.original.spellName}
+            className="w-6 h-6 rounded"
+            onError={(e) =>
+              (e.currentTarget.src = "/icons/inv_misc_questionmark.png")
+            }
+          />
+          <span>{row.original.spellName}</span>
+        </div>
+      ),
+    },
     { accessorKey: "totalDamage", header: "Total Damage" },
     { accessorKey: "usefulDamage", header: "Useful Damage" },
-    { accessorKey: "totalCasts", header: "No of casts" },
-    { accessorKey: "normalHits", header: "No of hits" },
-    { accessorKey: "criticalHits", header: "No of crits" },
-    // columnHelper.accessor("spellName", { header: "Spell Name" }),
-    // columnHelper.accessor("totalDamage", { header: "Total Damage" }),
-    // columnHelper.accessor("usefulDamage", { header: "Useful Damage" }),
-    // columnHelper.accessor("totalCasts", { header: "Total Casts" }),
-    // columnHelper.accessor("normalHits", { header: "Normal Hits" }),
-    // columnHelper.accessor("criticalHits", { header: "Critical Hits" }),
+    { accessorKey: "totalCasts", header: "Total Casts/Hits" },
+    { accessorKey: "normalHits", header: "Normal Hits" },
+    { accessorKey: "criticalHits", header: "Crits" },
   ];
 
   const table = useReactTable({
@@ -75,13 +89,16 @@ export default function PlayerSpellsPage() {
 
   return (
     <div className="p-6 border rounded-lg shadow">
-      <h2 className="text-2xl font-bold">Player: {playerName}'s Spells</h2>
+      <h2 className="text-2xl font-bold mb-4">Player: {playerName}'s Spells</h2>
       <table className="w-full border-collapse border mt-4">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <th key={header.id} className="border px-4 py-2 bg-gray-100">
+                <th
+                  key={header.id}
+                  className="border px-4 py-2 bg-gray-100 text-left"
+                >
                   {flexRender(
                     header.column.columnDef.header,
                     header.getContext()

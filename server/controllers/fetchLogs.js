@@ -7,7 +7,7 @@ import prisma from "../config/db.js";
 function formatTimestamp(timestamp) {
   let date = new Date(timestamp);
 
-  let year = date.getFullYear();
+  let year = new Date(Date.now()).getFullYear();
   let month = String(date.getMonth() + 1).padStart(2, "0");
   let day = String(date.getDate()).padStart(2, "0");
   let hours = String(date.getHours()).padStart(2, "0");
@@ -150,7 +150,9 @@ export const fetchLogsFromDb = async (req, res) => {
         bosses: Object.entries(bosses).map(([bossName, attempts]) => ({
           name: `${bossName} - Heroic`,
           attempts: attempts.map((attempt, index) => ({
-            name: `${bossName} - Attempt ${index + 1}`,
+            name: `Attempt ${index + 1} - ${attempt.startTime
+              .toISOString()
+              .replace("T", " ")}`,
             start: formatTimestamp(attempt.startTime),
             end: formatTimestamp(attempt.endTime),
             url: `/logs/${logId}/${encodeURIComponent(

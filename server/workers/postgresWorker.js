@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 import { redisConnection } from "../config/redis.js";
 import { PrismaClient } from "@prisma/client";
 import Redis from "ioredis";
+import { getSpellIconName } from "../helpers/spellIconHelper.js";
 
 const prisma = new PrismaClient();
 const redisPublisher = new Redis(
@@ -148,6 +149,13 @@ const postgresWorker = new Worker(
                     attempt.players[playerName].spellList[spell].normalHits,
                   criticalHits:
                     attempt.players[playerName].spellList[spell].criticalHits,
+                  icon:
+                    attempt.players[playerName].spellList[spell].spellName ===
+                    "Melee"
+                      ? "Melee"
+                      : getSpellIconName(
+                          attempt.players[playerName].spellList[spell].spellId
+                        ),
                 });
               }
             }
@@ -217,7 +225,11 @@ const postgresWorker = new Worker(
 
       await prisma.logs.update({
         where: { logId },
-        data: { uploadStatus: "completed", dbUploadCompleteAt: new Date() },
+        data: {
+          uploadStatus: "completed",
+          dbUploadCompleteAt: new Date(),
+          processingStatus: "completed",
+        },
       });
 
       // ✅ Store log reference in LogsMain

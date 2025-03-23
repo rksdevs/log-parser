@@ -21,13 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { toast } from "sonner";
-
+// import { toast } from "sonner";
 import { LogsMetadata } from "@/types";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import { Progress } from "./ui/progress";
 import { Badge } from "./ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 // const socket = io("http://localhost:8000");
 
@@ -42,6 +42,9 @@ export function Upload({
   const [logId, setLogId] = useState<string>("");
   const [status, setStatus] = useState<string>("processing");
   const [progress, setProgress] = useState({ stage: "", progress: 0 });
+  const [instanceNames, setInstanceNames] = useState<string[]>([]);
+  const [isSelectingInstance, setIsSelectingInstance] = useState(false);
+  const { toast } = useToast();
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -50,7 +53,10 @@ export function Upload({
       //  Enforce .zip file uploads
       if (!e.target.files[0].name.endsWith(".zip")) {
         setEnableUpload(false);
-        toast("Please upload a .zip file only!");
+        toast({
+          title: "Please upload a .zip file only!",
+          variant: "destructive",
+        });
         return;
       }
       setSelectedFile(e.target.files[0]);
@@ -124,6 +130,34 @@ export function Upload({
     setServerName("");
     setEnableUpload(false);
   };
+
+  const handleInstanceSelection = async (selectedIndex: number) => {
+    try {
+      axios.post(
+        `http://localhost:8000/api/logs/${logId}/select-instance`,
+        { selectedIndex },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      toast({
+        title: "Log Instance Selected",
+        description: `Log Instance - ${selectedIndex} is sent to save in DB`,
+      });
+      setIsSelectingInstance(false);
+      setInstanceNames([]);
+    } catch (error) {
+      toast({
+        title: "Error Selecting Log Instance",
+        description: `Something went wrong! Error: ${error}`,
+        variant: "destructive",
+      });
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     if (selectedFile && serverName) setEnableUpload(true);
   }, [selectedFile, serverName]);
@@ -144,6 +178,15 @@ export function Upload({
     socket.on(`log:${logId}`, (data) => {
       console.log("Progress Update Received:", data);
       setProgress(data);
+
+      if (data.stage === "awaiting_selection" && data.instanceNames?.length) {
+        setInstanceNames(data.instanceNames);
+        setIsSelectingInstance(true);
+      }
+      //redirect to log page on successfully database save
+      if (data.stage === "saving to database completed") {
+        setTimeout(handleNavigation, 300);
+      }
     });
 
     return () => {
@@ -204,11 +247,10 @@ export function Upload({
             <div className="mt-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle>
-                    Processing Log: <Badge>{logId}</Badge>
-                  </CardTitle>
+                  <CardTitle>Processing Log: {logId}</CardTitle>
                   <CardDescription>
-                    <span className="font-medium">Stage:</span> {progress.stage}
+                    <span className="font-medium text-primary">Stage:</span>{" "}
+                    <Badge className="pb-1">{progress.stage}</Badge>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -223,14 +265,32 @@ export function Upload({
                       <Progress value={progress.progress} />
                     </div>
                   )}
+                  {isSelectingInstance && (
+                    <div className="mt-4 space-y-2">
+                      <p className="font-medium">
+                        Multiple log instances found. Choose one to upload:
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {instanceNames.map((name, index) => (
+                          <Button
+                            key={index}
+                            onClick={() => handleInstanceSelection(index)}
+                            variant="outline"
+                          >
+                            {name}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
-                <CardFooter>
+                {/* <CardFooter>
                   {progress.stage === "saving to database completed" && (
                     <Button className="w-full" onClick={handleNavigation}>
                       View Log
                     </Button>
                   )}
-                </CardFooter>
+                </CardFooter> */}
               </Card>
             </div>
           )}

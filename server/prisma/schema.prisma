@@ -23,6 +23,8 @@ enum ProcessingStatus {
   pending
   completed
   failed
+  awaiting_user_choice
+  queued_for_db
 }
 
 model Logs {
@@ -121,6 +123,7 @@ model SpellStatistic {
   periodicHits  Int     @default(0)
   periodicCrits Int     @default(0)
   usefulDamage  Int     @default(0)
+  icon          String
 }
 
 model LogsMain {

@@ -126,6 +126,68 @@ const SPELL_BOOK = {
   11567: "Warrior",
   47450: "Warrior",
 };
+const PLAYER_CLASS = {
+  "Death Knight": {
+    "": "class_deathknight",
+    Blood: "spell_deathknight_bloodpresence",
+    Frost: "spell_deathknight_frostpresence",
+    Unholy: "spell_deathknight_unholypresence",
+  },
+  Druid: {
+    "": "class_druid",
+    Balance: "spell_nature_starfall",
+    "Feral Combat": "ability_racial_bearform",
+    Restoration: "spell_nature_healingtouch",
+  },
+  Hunter: {
+    "": "class_hunter",
+    "Beast Mastery": "ability_hunter_beasttaming",
+    Marksmanship: "ability_marksmanship",
+    Survival: "ability_hunter_swiftstrike",
+  },
+  Mage: {
+    "": "class_mage",
+    Arcane: "spell_holy_magicalsentry",
+    Fire: "spell_fire_firebolt02",
+    Frost: "spell_frost_frostbolt02",
+  },
+  Paladin: {
+    "": "class_paladin",
+    Holy: "spell_holy_holybolt",
+    Protection: "spell_holy_devotionaura",
+    Retribution: "spell_holy_auraoflight",
+  },
+  Priest: {
+    "": "class_priest",
+    Discipline: "spell_holy_wordfortitude",
+    Holy: "spell_holy_guardianspirit",
+    Shadow: "spell_shadow_shadowwordpain",
+  },
+  Rogue: {
+    "": "class_rogue",
+    Assassination: "ability_rogue_eviscerate",
+    Combat: "ability_backstab",
+    Subtlety: "ability_stealth",
+  },
+  Shaman: {
+    "": "class_shaman",
+    Elemental: "spell_nature_lightning",
+    Enhancement: "spell_nature_lightningshield",
+    Restoration: "spell_nature_magicimmunity",
+  },
+  Warlock: {
+    "": "class_warlock",
+    Affliction: "spell_shadow_deathcoil",
+    Demonology: "spell_shadow_metamorphosis",
+    Destruction: "spell_shadow_rainoffire",
+  },
+  Warrior: {
+    "": "class_warrior",
+    Arms: "ability_warrior_savageblow",
+    Fury: "ability_warrior_innerrage",
+    Protection: "ability_warrior_defensivestance",
+  },
+};
 
 /**
  * Gets the player class based on spell ID.

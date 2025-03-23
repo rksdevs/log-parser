@@ -67,6 +67,103 @@ async function saveToRedis(userId, logId, fightsData) {
   }
 }
 
+// ✅ NEW: Cache logInstances with name list in Redis
+/**
+ * Saves all structured log data to Redis cache to send the logInstances to the user for them to select the log which needs to be uplaoded to db
+ * @param {String} userId - User ID
+ * @param {String} logId - Unique log ID
+ * @param {Object} fightsData - Structured fights object
+ */
+// async function cacheInstancesInRedis(logId, logInstances) {
+//   try {
+//     const redisKey = `log:${logId}:instances`;
+
+//     // Store full structured fights
+//     await redisConnection.setex(
+//       redisKey,
+//       900, // 15 minutes
+//       JSON.stringify(logInstances)
+//     );
+
+//     // Update DB status
+//     await prisma.logs.update({
+//       where: { logId },
+//       data: {
+//         processingStatus: "awaiting_user_choice",
+//         processedAt: new Date(),
+//       },
+//     });
+
+//     // Send instance names to client via Redis PubSub
+//     const instanceNames = logInstances.map((i) => i.name);
+
+//     await redisPublisher.publish(
+//       `log:${logId}`,
+//       JSON.stringify({
+//         stage: "awaiting_selection",
+//         progress: 100,
+//         instanceNames,
+//       })
+//     );
+
+//     console.log(`📦 Cached ${logInstances.length} logInstances to Redis`);
+//   } catch (error) {
+//     console.error("❌ Error caching instances in Redis:", error);
+//   }
+// }
+
+async function cacheInstancePointersToRedis(logId, logInstances) {
+  try {
+    const instanceNames = logInstances.map((i) => i.name);
+
+    const cacheDir = path.join(
+      __dirname,
+      "..",
+      "tmp",
+      "cached-instances",
+      `log-${logId}`
+    );
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+
+    const instancePaths = [];
+
+    for (let i = 0; i < logInstances.length; i++) {
+      const instance = logInstances[i];
+      const filePath = path.join(cacheDir, `instance-${i}.json`);
+      fs.writeFileSync(filePath, JSON.stringify(instance));
+      instancePaths.push(filePath);
+    }
+
+    const redisKey = `log:${logId}:instances`;
+    await redisConnection.setex(
+      redisKey,
+      900,
+      JSON.stringify({ instanceNames, instancePaths })
+    );
+
+    await prisma.logs.update({
+      where: { logId },
+      data: {
+        processingStatus: "awaiting_user_choice",
+        processedAt: new Date(),
+      },
+    });
+
+    await redisPublisher.publish(
+      `log:${logId}`,
+      JSON.stringify({
+        stage: "awaiting_selection",
+        progress: 100,
+        instanceNames,
+      })
+    );
+
+    console.log(`📦 Stored ${logInstances.length} instance pointers in Redis`);
+  } catch (err) {
+    console.error("❌ Failed to cache instance pointers:", err.message);
+  }
+}
+
 const logWorker = new Worker(
   "log-processing-queue",
   async (job) => {
@@ -143,21 +240,28 @@ const logWorker = new Worker(
 
           console.log(` Log parsing completed for log ID: ${logId}`);
 
-          if (structuredFights) {
-            console.log(`🔹 Storing log in Redis for quick access...`);
+          //setting up the parsed structured fights in DB
+          // if (structuredFights) {
+          //   console.log(`🔹 Storing log in Redis for quick access...`);
 
-            console.log(logId);
-            // await saveToRedis(userId, logId, structuredFights);
-            // Run saveToRedis and PostgreSQL job simultaneously
-            await Promise.all([
-              // saveToRedis(userId, logId, structuredFights), // Save to Redis
-              postgresQueue.add("save-to-postgres", {
-                logId,
-                structuredFights,
-              }), // Save to PostgreSQL
-            ]);
+          //   console.log(logId);
+          //   // await saveToRedis(userId, logId, structuredFights);
+          //   // Run saveToRedis and PostgreSQL job simultaneously
+          //   await Promise.all([
+          //     // saveToRedis(userId, logId, structuredFights), // Save to Redis
+          //     postgresQueue.add("save-to-postgres", {
+          //       logId,
+          //       structuredFights,
+          //     }), // Save to PostgreSQL
+          //   ]);
 
-            publishProgress(logId, "saving", 10);
+          //   publishProgress(logId, "saving", 10);
+          // }
+
+          // sending cached instances from redis to user for user selection
+          if (structuredFights && Array.isArray(structuredFights)) {
+            console.log(`🔹 Caching structured fights (multiple instances)...`);
+            await cacheInstancePointersToRedis(logId, structuredFights);
           }
         } else {
           throw new Error(

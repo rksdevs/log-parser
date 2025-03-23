@@ -14,6 +14,7 @@ import encounterRoutes from "./routes/encountersRoute.js";
 import attemptRoutes from "./routes/attemptsRoute.js";
 import playerRoutes from "./routes/playersRoute.js";
 import spellRoutes from "./routes/spellsRoute.js";
+import selectInstance from "./routes/selectInstanceRoute.js";
 
 dotenv.config();
 const app = express();
@@ -57,6 +58,7 @@ app.use("/api/logs", attemptRoutes);
 app.use("/api/logs", playerRoutes);
 app.use("/api/logs", spellRoutes);
 app.use("/api/logs", encounterRoutes);
+app.use("/api/logs", selectInstance);
 
 const port = process.env.PORT || 8800;
 if (process.env.WORKER !== "true") {

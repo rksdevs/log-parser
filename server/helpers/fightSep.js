@@ -197,8 +197,23 @@ function processAttempt(
 ) {
   if (attemptLogs.length === 0) return null;
 
-  const startTime = attemptLogs[0].timestamp;
-  const endTime = attemptLogs[attemptLogs.length - 1].timestamp;
+  const startTime = `${new Date(
+    `${new Date(Date.now()).getFullYear()}/${attemptLogs[0].timestamp}`
+  )
+    .toISOString()
+    .replace("T", " ")
+    .substring(0, 19)}`;
+
+  // console.log(startTime);
+  // const endTime = attemptLogs[attemptLogs.length - 1].timestamp;
+  const endTime = `${new Date(
+    `${new Date(Date.now()).getFullYear()}/${
+      attemptLogs[attemptLogs.length - 1].timestamp
+    }`
+  )
+    .toISOString()
+    .replace("T", " ")
+    .substring(0, 19)}`;
 
   const attemptPlayers = {}; // Stores per-player stats
   let overallDamage = 0; //  Tracks total damage across all actors
@@ -408,7 +423,7 @@ function convertTimestampToMs(timestamp) {
   const [hours, minutes, seconds] = time.split(":");
 
   return new Date(
-    2024,
+    new Date(Date.now()).getFullYear(),
     parseInt(month) - 1,
     parseInt(day),
     parseInt(hours),

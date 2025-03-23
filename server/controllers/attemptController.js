@@ -38,6 +38,7 @@ export const getAttemptDetails = async (req, res) => {
       dps: totalDuration ? (p.damageDone / totalDuration).toFixed(2) : 0,
       totalHealing: p.healingDone,
       hps: totalDuration ? (p.healingDone / totalDuration).toFixed(2) : 0,
+      class: p.player.class || "Unknown",
     }));
 
     res.json(formattedData);
