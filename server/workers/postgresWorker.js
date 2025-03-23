@@ -193,11 +193,6 @@ const postgresWorker = new Worker(
 
       publishProgress(logId, "saving to database", 90);
 
-      // await prisma.logs.update({
-      //   where: { logId },
-      //   data: { uploadStatus: "completed", dbUploadCompleteAt: new Date() },
-      // });
-
       const firstEncounter =
         structuredFights && Object.keys(structuredFights).length > 0
           ? new Date(

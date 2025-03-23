@@ -109,6 +109,7 @@ export default function AttemptPage() {
   const columns: ColumnDef<PlayerStats, string>[] = [
     columnHelper.accessor("playerName", {
       id: "Player",
+      header: "Player Name",
       cell: ({ row }) => (
         <Link
           href={`/logs/${logId}/${encounter}/${attempt}/${row.original.playerName}`}

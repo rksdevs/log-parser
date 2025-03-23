@@ -1,4 +1,4 @@
-import { getBossName } from "../helpers/bossHelper.js";
+import { getBossName, getMultiBossName } from "../helpers/bossHelper.js";
 
 /**
  * Splits logs into separate fight attempts based on time gaps.
@@ -15,15 +15,35 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
   let currentAttempt = {};
   let lastTimestamp = {};
 
+  //validate attempts, if attempts are less than 30 seconds invalidate them
+  // if ((new Date(endTime) - new Date(startTime)) / 1000 <= 30) {
+  //   //this is an invalid attempt
+  //   console.log("This is an invalid attempt");
+  // }
+
   const MAX_GAP = 30000; // 30 seconds for fight reset
 
   for (const log of logLines) {
-    const { timestamp, raw, targetGUID, damageBreakdown, healingBreakdown } =
-      log;
+    const {
+      timestamp,
+      raw,
+      targetGUID,
+      sourceGUID,
+      damageBreakdown,
+      healingBreakdown,
+      multiBossEncounter,
+    } = log;
     const timeInMs = convertTimestampToMs(timestamp);
 
     // Identify boss from target
-    const bossName = getBossName(targetGUID);
+    // const bossName = getBossName(targetGUID);
+    let bossName = getBossName(targetGUID) || getBossName(sourceGUID);
+    if (multiBossEncounter) {
+      const multiBossName =
+        getMultiBossName(targetGUID) || getMultiBossName(sourceGUID);
+      bossName = multiBossName;
+    }
+
     if (!bossName) continue;
 
     // Initialize boss tracking
@@ -36,7 +56,16 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
       lastTimestamp[bossName] &&
       timeInMs - lastTimestamp[bossName] > MAX_GAP
     ) {
-      bossAttempts[bossName].push(
+      // bossAttempts[bossName].push(
+      //   processAttempt(
+      //     currentAttempt[bossName],
+      //     bossName,
+      //     playerStats,
+      //     allGuids,
+      //     petOwners
+      //   )
+      // );
+      if (
         processAttempt(
           currentAttempt[bossName],
           bossName,
@@ -44,7 +73,17 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
           allGuids,
           petOwners
         )
-      );
+      ) {
+        bossAttempts[bossName].push(
+          processAttempt(
+            currentAttempt[bossName],
+            bossName,
+            playerStats,
+            allGuids,
+            petOwners
+          )
+        );
+      }
       currentAttempt[bossName] = [];
     }
 
@@ -56,7 +95,7 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
   // Save any remaining attempts
   for (const boss in currentAttempt) {
     if (currentAttempt[boss].length > 0) {
-      bossAttempts[boss].push(
+      if (
         processAttempt(
           currentAttempt[boss],
           boss,
@@ -64,10 +103,21 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
           allGuids,
           petOwners
         )
-      );
+      ) {
+        bossAttempts[boss].push(
+          processAttempt(
+            currentAttempt[boss],
+            boss,
+            playerStats,
+            allGuids,
+            petOwners
+          )
+        );
+      }
     }
   }
 
+  // console.log("Boss Attempts", bossAttempts);
   return bossAttempts;
 }
 
@@ -214,6 +264,15 @@ function processAttempt(
     .toISOString()
     .replace("T", " ")
     .substring(0, 19)}`;
+
+  //validate attempts, if attempts are less than 30 seconds invalidate them
+  //edge case - what if the encounter itself is less than 30 seconds, that is boss died - Need to work
+  //edge case - what if the encounter ended due to wipe in 30 seconds, boss didnt die - Need to work
+  if ((new Date(endTime) - new Date(startTime)) / 1000 <= 30) {
+    //this is an invalid attempt
+    // console.log("This is an invalid attempt");
+    return;
+  }
 
   const attemptPlayers = {}; // Stores per-player stats
   let overallDamage = 0; //  Tracks total damage across all actors
