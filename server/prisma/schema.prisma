@@ -43,6 +43,7 @@ model Logs {
   // New relationship to encounters
   encounters         Encounter[]
   LogsMain           LogsMain?
+  Pet                Pet[]
 }
 
 // New Tables for Storing Structured Data
@@ -127,13 +128,31 @@ model SpellStatistic {
 }
 
 model LogsMain {
-  id              Int      @id @default(autoincrement()) // ✅ Integer ID
-  logId           Int      @unique // ✅ Matches Logs.logId (Integer)
+  id              Int      @id @default(autoincrement())
+  logId           Int      @unique
   firstEncounter  DateTime
   playersInvolved String
   uploadStatus    String   @default("processing")
   createdAt       DateTime @default(now())
 
   // ✅ Ensure the referenced field matches exactly
-  log Logs @relation(fields: [logId], references: [logId], onDelete: Cascade)
+  log  Logs  @relation(fields: [logId], references: [logId], onDelete: Cascade)
+  pets Pet[]
+}
+
+model Pet {
+  id        String @id @default(cuid())
+  logId     Int
+  petGUID   String // Pet's GUID (e.g. F140...)
+  petName   String
+  ownerGUID String // Player's GUID
+  ownerName String
+
+  logMain   LogsMain @relation(fields: [logId], references: [logId], onDelete: Cascade)
+  Logs      Logs?    @relation(fields: [logsLogId], references: [logId])
+  logsLogId Int?
+
+  @@index([logId])
+  @@index([petGUID])
+  @@index([ownerGUID])
 }

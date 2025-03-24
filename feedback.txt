@@ -1,0 +1,9 @@
+Total damage > useful + non useful breakdown
+Healing > breakdown
+
+Player Wise view
+
+
+need healing breakdown
+need useful damage recalculation
+Active time & Inactive time -- needs to be though through
