@@ -6,6 +6,7 @@ import { getBossName, getMultiBossName } from "../helpers/bossHelper.js";
 import { splitToAttempts } from "../helpers/fightSep.js";
 import { getPlayerClassFromSpell } from "../helpers/playerClassHelper.js";
 import { PET_SPELLS } from "../helpers/petHelpers.js";
+import { detectPetsAdvanced } from "../helpers/petResolver.js";
 
 //  Fix __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -623,6 +624,294 @@ const newLogInstance = (currentDate, prevDate) => {
 //   return allStructuredFights;
 // }
 
+// async function processLogFile(filePath, logId) {
+//   console.log(` Streaming log file: ${filePath}`);
+
+//   const logStream = fs.createReadStream(filePath);
+//   const rl = readline.createInterface({ input: logStream });
+
+//   const logInstances = [];
+//   let currentInstance = {
+//     bossLogs: {},
+//     playerStats: {},
+//     allGuids: {},
+//     petOwners: {},
+//     firstBossTimestamp: null,
+//   };
+
+//   const isPlayerGUID = (guid) => guid.startsWith("0000000");
+//   const isPetGUID = (guid) => guid.startsWith("F1");
+//   const getPetOwner = (petGUID) => currentInstance.petOwners[petGUID] || null;
+
+//   let prevDate = null;
+
+//   for await (const line of rl) {
+//     if (!line?.trim()) continue;
+
+//     const firstSpaceIndex = line.indexOf(" ");
+//     const secondSpaceIndex = line.indexOf(" ", firstSpaceIndex + 1);
+//     const timestamp = line.substring(0, secondSpaceIndex);
+//     const eventData = line.substring(secondSpaceIndex + 1);
+//     const parts = eventData.split(",");
+//     if (parts.length < 5) continue;
+
+//     const eventType = parts[0];
+//     const sourceGUID = parts[1].replace("0x", "");
+//     const sourceName = parts[2]?.replace(/"/g, "");
+//     const targetGUID = parts[4]?.replace("0x", "");
+//     const targetName = parts[5]?.replace(/"/g, "");
+//     const spellId = parts[7] || null;
+//     const spellName = parts[8]?.replace(/"/g, "") || null;
+//     let multiBossEncounter = false;
+
+//     if (eventType.includes("MISSED")) continue;
+
+//     const currentDate = new Date(
+//       `${new Date(Date.now()).getFullYear()}/${timestamp}`
+//     );
+
+//     let bossName = getBossName(targetGUID) || getBossName(sourceGUID);
+//     const multiBossName =
+//       getMultiBossName(targetGUID) || getMultiBossName(sourceGUID);
+//     if (multiBossName) {
+//       bossName = multiBossName;
+//       multiBossEncounter = true;
+//     }
+
+//     const isBossEvent = !!bossName;
+
+//     if (isBossEvent) {
+//       if (prevDate && newLogInstance(currentDate, prevDate)) {
+//         logInstances.push(currentInstance);
+//         currentInstance = {
+//           bossLogs: {},
+//           playerStats: {},
+//           allGuids: {},
+//           petOwners: {},
+//           firstBossTimestamp: null, // ✅ reset for new instance
+//         };
+//       }
+
+//       prevDate = currentDate;
+//     }
+
+//     if (!isBossEvent) continue;
+
+//     // Store the timestamp of the first boss event
+//     if (!currentInstance.firstBossTimestamp) {
+//       currentInstance.firstBossTimestamp = timestamp;
+//     }
+
+//     if (!currentInstance.allGuids[sourceGUID])
+//       currentInstance.allGuids[sourceGUID] = { name: sourceName };
+//     if (!currentInstance.allGuids[targetGUID])
+//       currentInstance.allGuids[targetGUID] = { name: targetName };
+
+//     //if summoning the pet is available in the logs (mostly dk gary, priest shadowfiend)
+//     if (eventType === "SPELL_SUMMON") {
+//       currentInstance.petOwners[targetGUID] = sourceGUID;
+//       currentInstance.allGuids[targetGUID].master_guid = sourceGUID;
+//     }
+
+//     if (
+//       spellId in PET_SPELLS &&
+//       isPlayerGUID(sourceGUID) &&
+//       isPetGUID(targetGUID)
+//     ) {
+//       currentInstance.petOwners[targetGUID] = sourceGUID;
+//       currentInstance.allGuids[targetGUID].master_guid = sourceGUID;
+//     }
+
+//     if (
+//       spellId === "34952" &&
+//       isPlayerGUID(sourceGUID) &&
+//       isPetGUID(targetGUID)
+//     ) {
+//       currentInstance.petOwners[targetGUID] = sourceGUID;
+//       currentInstance.allGuids[targetGUID].master_guid = sourceGUID;
+//     }
+
+//     if (!currentInstance.bossLogs[bossName])
+//       currentInstance.bossLogs[bossName] = [];
+
+//     let damageBreakdown = {};
+//     let healingBreakdown = {};
+
+//     if (eventType.includes("DAMAGE")) {
+//       if (parts[0]?.trim() === "SWING_DAMAGE") {
+//         damageBreakdown.amount = parseInt(parts[7]);
+//         damageBreakdown.overkill = parseInt(parts[8]);
+//         damageBreakdown.resisted = parseInt(parts[10]);
+//         damageBreakdown.blocked = parseInt(parts[11]);
+//         damageBreakdown.absorbed = parseInt(parts[12]);
+//         damageBreakdown.critical = parts[13]?.trim() !== "nil";
+//         damageBreakdown.glancing = parts[14]?.trim() !== "nil";
+//         damageBreakdown.crushing = parts[15]?.trim() !== "nil";
+//       } else {
+//         damageBreakdown.amount = parseInt(parts[10]);
+//         damageBreakdown.overkill = parseInt(parts[11]);
+//         damageBreakdown.resisted = parseInt(parts[13]);
+//         damageBreakdown.blocked = parseInt(parts[14]);
+//         damageBreakdown.absorbed = parseInt(parts[15]);
+//         damageBreakdown.critical = parts[16]?.trim() !== "nil";
+//         damageBreakdown.glancing = parts[17]?.trim() !== "nil";
+//         damageBreakdown.crushing = parts[18]?.trim() !== "nil";
+//       }
+//     }
+
+//     if (eventType.includes("HEAL")) {
+//       healingBreakdown.amount = parseInt(parts[10]);
+//       healingBreakdown.overHealing = parseInt(parts[11]);
+//       healingBreakdown.absorbed = parseInt(parts[12]);
+//       healingBreakdown.critical = parts[13]?.trim() !== "nil";
+//     }
+
+//     currentInstance.bossLogs[bossName].push({
+//       timestamp,
+//       eventType,
+//       sourceGUID,
+//       targetGUID,
+//       sourceName,
+//       targetName,
+//       spellId,
+//       spellName,
+//       raw: line,
+//       damageBreakdown,
+//       healingBreakdown,
+//       multiBossEncounter,
+//     });
+
+//     if (sourceName) {
+//       if (!currentInstance.playerStats[sourceName]) {
+//         currentInstance.playerStats[sourceName] = {
+//           class: null,
+//           damage: 0,
+//           healing: 0,
+//         };
+//       }
+
+//       if (
+//         (!currentInstance.playerStats[sourceName].class ||
+//           currentInstance.playerStats[sourceName].class === "Unknown") &&
+//         spellId
+//       ) {
+//         currentInstance.playerStats[sourceName].class =
+//           getPlayerClassFromSpell(spellId);
+//       }
+
+//       if (eventType.includes("DAMAGE")) {
+//         const dmg =
+//           parts[0] === "SWING_DAMAGE"
+//             ? parseInt(parts[7])
+//             : parseInt(parts[10]);
+//         currentInstance.playerStats[sourceName].damage += dmg || 0;
+//       }
+
+//       if (eventType.includes("HEAL")) {
+//         currentInstance.playerStats[sourceName].healing +=
+//           parseInt(parts[10]) || 0;
+//       }
+//     }
+
+//     if (
+//       (eventType.includes("DAMAGE") || eventType.includes("HEAL")) &&
+//       isPetGUID(sourceGUID) &&
+//       currentInstance.petOwners[sourceGUID]
+//     ) {
+//       const ownerGUID = currentInstance.petOwners[sourceGUID];
+//       const ownerName = currentInstance.allGuids[ownerGUID]?.name;
+//       if (!ownerName) continue;
+
+//       if (!currentInstance.playerStats[ownerName]) {
+//         currentInstance.playerStats[ownerName] = {
+//           class: null,
+//           damage: 0,
+//           healing: 0,
+//           pets: {},
+//         };
+//       }
+
+//       const petName = sourceName;
+//       if (!currentInstance.playerStats[ownerName].pets)
+//         currentInstance.playerStats[ownerName].pets = {};
+//       if (!currentInstance.playerStats[ownerName].pets[petName]) {
+//         currentInstance.playerStats[ownerName].pets[petName] = {
+//           damage: 0,
+//           healing: 0,
+//         };
+//       }
+
+//       if (eventType.includes("DAMAGE")) {
+//         const dmg =
+//           parts[0] === "SWING_DAMAGE"
+//             ? parseInt(parts[7])
+//             : parseInt(parts[10]);
+//         currentInstance.playerStats[ownerName].pets[petName].damage += dmg || 0;
+//       }
+//     }
+//   }
+
+//   logInstances.push(currentInstance); // Push final instance
+
+//   const allStructuredFights = [];
+
+//   for (const instance of logInstances) {
+//     const { bossLogs, playerStats, allGuids, petOwners } = instance;
+//     const structuredFights = {};
+
+//     for (const [boss, logs] of Object.entries(bossLogs)) {
+//       // console.log(boss);
+//       if (!logs || logs.length === 0) continue;
+//       structuredFights[boss] = splitToAttempts(
+//         logs,
+//         playerStats,
+//         allGuids,
+//         petOwners
+//       );
+//     }
+
+//     if (Object.keys(structuredFights).length > 0) {
+//       const readableName = instance.firstBossTimestamp
+//         ? `${new Date(
+//             `${new Date(Date.now()).getFullYear()}/${
+//               instance.firstBossTimestamp
+//             }`
+//           )
+//             .toISOString()
+//             .replace("T", " ")
+//             .substring(0, 19)}`
+//         : `LogInstance-${allStructuredFights.length + 1}`;
+
+//       allStructuredFights.push({
+//         name: readableName, // ✅ Added name field for client use
+//         fights: structuredFights,
+//         players: playerStats,
+//         allGuids,
+//         petOwners,
+//       });
+//     }
+//   }
+
+//   // Save each instance separately (optional for debug)
+//   const outputDir = path.join(__dirname, "../logs/json");
+//   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+//   allStructuredFights.forEach((fight, index) => {
+//     fs.writeFileSync(
+//       path.join(outputDir, `log-${logId}-fight-${index}.json`),
+//       JSON.stringify(fight, null, 2)
+//     );
+//   });
+
+//   // fs.writeFileSync(
+//   //   path.join(outputDir, `log-${logId}-allfights.json`),
+//   //   JSON.stringify(allStructuredFights, null, 2)
+//   // );
+
+//   console.log(`✅ Processed ${allStructuredFights.length} log instances`);
+//   return allStructuredFights;
+// }
+
 async function processLogFile(filePath, logId) {
   console.log(` Streaming log file: ${filePath}`);
 
@@ -635,12 +924,13 @@ async function processLogFile(filePath, logId) {
     playerStats: {},
     allGuids: {},
     petOwners: {},
+    petDetails: {},
     firstBossTimestamp: null,
   };
 
   const isPlayerGUID = (guid) => guid.startsWith("0000000");
   const isPetGUID = (guid) => guid.startsWith("F1");
-  const getPetOwner = (petGUID) => currentInstance.petOwners[petGUID] || null;
+  const isPermaPet = (guid) => guid.startsWith("F14");
 
   let prevDate = null;
 
@@ -663,6 +953,31 @@ async function processLogFile(filePath, logId) {
     const spellName = parts[8]?.replace(/"/g, "") || null;
     let multiBossEncounter = false;
 
+    //classify pet based on GUID F14 is permanent pet, F13 is uncontrolled pet
+    //F14 - Player controlled pet
+    if (isPermaPet(sourceGUID)) {
+      console.log("found permanent pet");
+      if (!currentInstance.petDetails[sourceGUID]) {
+        currentInstance.petDetails[sourceGUID] = {
+          name: sourceName,
+          master_name: "",
+          master_guid: "",
+        };
+      }
+    }
+
+    if (isPermaPet(targetGUID)) {
+      console.log("found permanent pet");
+
+      if (!currentInstance.petDetails[targetGUID]) {
+        currentInstance.petDetails[targetGUID] = {
+          name: targetName,
+          master_name: "",
+          master_guid: "",
+        };
+      }
+    }
+
     if (eventType.includes("MISSED")) continue;
 
     const currentDate = new Date(
@@ -679,24 +994,24 @@ async function processLogFile(filePath, logId) {
 
     const isBossEvent = !!bossName;
 
-    if (isBossEvent) {
-      if (prevDate && newLogInstance(currentDate, prevDate)) {
-        logInstances.push(currentInstance);
-        currentInstance = {
-          bossLogs: {},
-          playerStats: {},
-          allGuids: {},
-          petOwners: {},
-          firstBossTimestamp: null, // ✅ reset for new instance
-        };
-      }
+    if (isBossEvent && prevDate && newLogInstance(currentDate, prevDate)) {
+      logInstances.push(currentInstance);
+      currentInstance = {
+        bossLogs: {},
+        playerStats: {},
+        allGuids: {},
+        petOwners: {},
+        petDetails: {},
+        firstBossTimestamp: null,
+      };
+    }
 
+    if (isBossEvent) {
       prevDate = currentDate;
     }
 
     if (!isBossEvent) continue;
 
-    // Store the timestamp of the first boss event
     if (!currentInstance.firstBossTimestamp) {
       currentInstance.firstBossTimestamp = timestamp;
     }
@@ -706,34 +1021,34 @@ async function processLogFile(filePath, logId) {
     if (!currentInstance.allGuids[targetGUID])
       currentInstance.allGuids[targetGUID] = { name: targetName };
 
-    if (eventType === "SPELL_SUMMON") {
-      currentInstance.petOwners[targetGUID] = sourceGUID;
-      currentInstance.allGuids[targetGUID].master_guid = sourceGUID;
-    }
+    // if (eventType === "SPELL_SUMMON") {
+    //   currentInstance.petOwners[targetGUID] = sourceGUID;
+    //   currentInstance.allGuids[targetGUID].master_guid = sourceGUID;
+    // }
 
-    if (
-      spellId in PET_SPELLS &&
-      isPlayerGUID(sourceGUID) &&
-      isPetGUID(targetGUID)
-    ) {
-      currentInstance.petOwners[targetGUID] = sourceGUID;
-      currentInstance.allGuids[targetGUID].master_guid = sourceGUID;
-    }
+    // if (
+    //   spellId in PET_SPELLS &&
+    //   isPlayerGUID(sourceGUID) &&
+    //   isPetGUID(targetGUID)
+    // ) {
+    //   currentInstance.petOwners[targetGUID] = sourceGUID;
+    //   currentInstance.allGuids[targetGUID].master_guid = sourceGUID;
+    // }
 
-    if (
-      spellId === "34952" &&
-      isPlayerGUID(sourceGUID) &&
-      isPetGUID(targetGUID)
-    ) {
-      currentInstance.petOwners[targetGUID] = sourceGUID;
-      currentInstance.allGuids[targetGUID].master_guid = sourceGUID;
-    }
+    // if (
+    //   spellId === "34952" &&
+    //   isPlayerGUID(sourceGUID) &&
+    //   isPetGUID(targetGUID)
+    // ) {
+    //   currentInstance.petOwners[targetGUID] = sourceGUID;
+    //   currentInstance.allGuids[targetGUID].master_guid = sourceGUID;
+    // }
 
     if (!currentInstance.bossLogs[bossName])
       currentInstance.bossLogs[bossName] = [];
 
-    let damageBreakdown = {};
-    let healingBreakdown = {};
+    const damageBreakdown = {};
+    const healingBreakdown = {};
 
     if (eventType.includes("DAMAGE")) {
       if (parts[0]?.trim() === "SWING_DAMAGE") {
@@ -849,22 +1164,21 @@ async function processLogFile(filePath, logId) {
     }
   }
 
-  logInstances.push(currentInstance); // Push final instance
-
+  logInstances.push(currentInstance);
   const allStructuredFights = [];
 
   for (const instance of logInstances) {
-    const { bossLogs, playerStats, allGuids, petOwners } = instance;
+    const { bossLogs, playerStats, allGuids, petOwners, petDetails } = instance;
     const structuredFights = {};
 
     for (const [boss, logs] of Object.entries(bossLogs)) {
-      // console.log(boss);
       if (!logs || logs.length === 0) continue;
+      const improvedPetOwners = detectPetsAdvanced(logs, allGuids, petOwners);
       structuredFights[boss] = splitToAttempts(
         logs,
         playerStats,
         allGuids,
-        petOwners
+        improvedPetOwners
       );
     }
 
@@ -881,16 +1195,16 @@ async function processLogFile(filePath, logId) {
         : `LogInstance-${allStructuredFights.length + 1}`;
 
       allStructuredFights.push({
-        name: readableName, // ✅ Added name field for client use
+        name: readableName,
         fights: structuredFights,
         players: playerStats,
         allGuids,
         petOwners,
+        petDetails,
       });
     }
   }
 
-  // Save each instance separately (optional for debug)
   const outputDir = path.join(__dirname, "../logs/json");
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
@@ -901,15 +1215,10 @@ async function processLogFile(filePath, logId) {
     );
   });
 
-  // fs.writeFileSync(
-  //   path.join(outputDir, `log-${logId}-allfights.json`),
-  //   JSON.stringify(allStructuredFights, null, 2)
-  // );
-
   console.log(`✅ Processed ${allStructuredFights.length} log instances`);
   return allStructuredFights;
 }
 
-// processLogFile("../server/logs/json/Sample-togc-10-inno.txt", 149);
+processLogFile("../server/logs/json/Sample-togc-10-inno.txt", 150);
 
 export { processLogFile };

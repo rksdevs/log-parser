@@ -2,3 +2,5 @@ server/logs/json/
 server/logs/json/*
 client/public/icons
 server/scripts
+server/logs/pets/
+server/logs/pets/*
