@@ -10,6 +10,11 @@ import AdmZip from "adm-zip";
 // import { processLogFile } from "../parsers/logParser.js";
 import Redis from "ioredis";
 import { generateAttemptSegments } from "./attemptSegmentWorker.js";
+import {
+  damageHealQueue,
+  damageHealQueueEvents,
+} from "../queues/damageHealQueue.js";
+import { petQueue, petQueueEvents } from "../queues/petQueue.js";
 
 dotenv.config();
 const prisma = new PrismaClient();
@@ -18,17 +23,17 @@ const redisPublisher = new Redis(
 );
 
 // Initialize PostgreSQL Queue
-const postgresQueue = new Queue("postgres-save-queue", {
-  connection: redisConnection,
-});
+// const postgresQueue = new Queue("postgres-save-queue", {
+//   connection: redisConnection,
+// });
 
-const damageHealQueue = new Queue("damage-heal-worker-queue", {
-  connection: redisConnection,
-});
+// const damageHealQueue = new Queue("damage-heal-worker-queue", {
+//   connection: redisConnection,
+// });
 
-const damageHealQueueEvents = new QueueEvents("damage-heal-worker-queue", {
-  connection: redisConnection,
-});
+// const damageHealQueueEvents = new QueueEvents("damage-heal-worker-queue", {
+//   connection: redisConnection,
+// });
 
 // ✅ Function to Publish Events to Redis Instead of Emitting Directly
 const publishProgress = async (logId, stage, progress) => {
@@ -188,6 +193,10 @@ const logWorker = new Worker(
           // 1. Generate segmented attempts and save as JSON
           const attemptOutputPath = path.join(extractPath, `attempts.json`);
           await generateAttemptSegments(filePath, logId, attemptOutputPath);
+          // const petJob = await petQueue.add("parse-pets", {
+          //   logId,
+          //   filePath, // full path to .txt
+          // });
           publishProgress(logId, "segmentation", 30);
           console.log(`✅ Generated segmented attempts for ${logId}`);
 
@@ -199,22 +208,13 @@ const logWorker = new Worker(
           const structuredFights = await job.waitUntilFinished(
             damageHealQueueEvents
           );
-          console.log("✅length", structuredFights.length);
-          console.log("✅array", Array.isArray(structuredFights));
-          console.log(structuredFights);
-
-          //old way of calling processLogFile function
-          // 2. Parse the attempt segments instead of raw txt
-          // const structuredFights = await processLogFile(
-          //   attemptOutputPath,
-          //   logId
-          // );
           publishProgress(logId, "parsing", 50);
           console.log(`✅ Log parsing completed for log ID: ${logId}`);
 
           // sending cached instances from redis to user for user selection
           if (structuredFights && Array.isArray(structuredFights)) {
             console.log(`🔹 Caching structured fights (multiple instances)...`);
+            // await petJob.waitUntilFinished(petQueueEvents);
             await cacheInstancePointersToRedis(logId, structuredFights);
           }
           // fs.unlinkSync(tempZipPath);

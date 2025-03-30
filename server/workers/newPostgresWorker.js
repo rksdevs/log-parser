@@ -18,7 +18,7 @@ const publishProgress = async (logId, stage, progress) => {
 };
 
 const postgresWorker = new Worker(
-  "postgres-save-queue-new",
+  "save-to-postgres-db-queue",
   async (job) => {
     const { logId, structuredFights } = job.data;
     console.log(`🚀 Processing PostgreSQL save for log ID: ${logId}`);
@@ -226,29 +226,6 @@ const postgresWorker = new Worker(
           processingStatus: "completed",
         },
       });
-
-      // await prisma.logsMain.create({
-      //   data: {
-      //     logId,
-      //     firstEncounter,
-      //     playersInvolved: JSON.stringify(allPlayersArray),
-      //     uploadStatus: "completed",
-      //   },
-      // });
-
-      // await prisma.logsMain.create({
-      //   data: {
-      //     logId,
-      //     firstEncounter,
-      //     playersInvolved: JSON.stringify(allPlayersArray),
-      //     uploadStatus: "completed",
-      //     log: {
-      //       connect: {
-      //         logId,
-      //       },
-      //     },
-      //   },
-      // });
 
       await prisma.logsMain.create({
         data: {

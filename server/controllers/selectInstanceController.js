@@ -4,10 +4,11 @@ import { redisConnection } from "../config/redis.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { postgresQueue } from "../queues/postgresQueue.js";
 
-const postgresQueue = new Queue("postgres-save-queue-new", {
-  connection: redisConnection,
-});
+// const postgresQueue = new Queue("postgres-save-queue-new", {
+//   connection: redisConnection,
+// });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
