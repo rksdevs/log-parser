@@ -1219,6 +1219,6 @@ async function processLogFile(filePath, logId) {
   return allStructuredFights;
 }
 
-processLogFile("../server/logs/json/Sample-togc-10-inno.txt", 150);
+// processLogFile("../server/logs/json/Sample-togc-10-inno.txt", 150);
 
 export { processLogFile };

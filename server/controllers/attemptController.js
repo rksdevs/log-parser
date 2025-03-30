@@ -21,7 +21,7 @@ export const getAttemptDetails = async (req, res) => {
         },
       },
       include: {
-        players: { include: { player: true } },
+        AttemptParticipant: { include: { player: true } },
       },
     });
 
@@ -32,7 +32,7 @@ export const getAttemptDetails = async (req, res) => {
     const totalDuration =
       (new Date(attempt.endTime) - new Date(attempt.startTime)) / 1000;
 
-    const formattedData = attempt.players.map((p) => ({
+    const formattedData = attempt.AttemptParticipant.map((p) => ({
       playerName: p.player.name,
       totalDamage: p.damageDone,
       dps: totalDuration ? (p.damageDone / totalDuration).toFixed(2) : 0,

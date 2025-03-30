@@ -98,7 +98,7 @@ export const fetchLogsFromDb = async (req, res) => {
                   include: {
                     attempts: {
                       include: {
-                        players: {
+                        AttemptParticipant: {
                           include: { player: true },
                         },
                         spellStats: true,
@@ -134,7 +134,7 @@ export const fetchLogsFromDb = async (req, res) => {
           logData[encounter.name][boss.name].push({
             startTime: attempt.startTime,
             endTime: attempt.endTime,
-            players: attempt.players.map((p) => p.player.name),
+            players: attempt.AttemptParticipant.map((p) => p.player.name),
             spellStatistics: attempt.spellStats,
           });
         }

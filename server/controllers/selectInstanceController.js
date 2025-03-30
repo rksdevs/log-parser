@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const postgresQueue = new Queue("postgres-save-queue", {
+const postgresQueue = new Queue("postgres-save-queue-new", {
   connection: redisConnection,
 });
 
@@ -30,6 +30,8 @@ export const selectLogInstance = async (req, res) => {
           "Selected instance not found: cache expired, try uploading new log again!",
       });
     }
+
+    // console.log(redisData);
 
     const { instancePaths } = JSON.parse(redisData);
     const filePath = instancePaths[selectedIndex];

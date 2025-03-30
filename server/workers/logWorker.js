@@ -1,4 +1,4 @@
-import { Worker, Queue } from "bullmq";
+import { Worker, Queue, QueueEvents } from "bullmq";
 import { redisConnection } from "../config/redis.js";
 import AWS from "aws-sdk";
 import fs from "fs";
@@ -7,8 +7,9 @@ import path from "path";
 import { PrismaClient } from "@prisma/client";
 import { fileURLToPath } from "url";
 import AdmZip from "adm-zip";
-import { processLogFile } from "../parsers/logParser.js";
+// import { processLogFile } from "../parsers/logParser.js";
 import Redis from "ioredis";
+import { generateAttemptSegments } from "./attemptSegmentWorker.js";
 
 dotenv.config();
 const prisma = new PrismaClient();
@@ -18,6 +19,14 @@ const redisPublisher = new Redis(
 
 // Initialize PostgreSQL Queue
 const postgresQueue = new Queue("postgres-save-queue", {
+  connection: redisConnection,
+});
+
+const damageHealQueue = new Queue("damage-heal-worker-queue", {
+  connection: redisConnection,
+});
+
+const damageHealQueueEvents = new QueueEvents("damage-heal-worker-queue", {
   connection: redisConnection,
 });
 
@@ -40,77 +49,13 @@ const s3 = new AWS.S3({
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/**
- * Saves structured log data to Redis
- * @param {String} userId - User ID
- * @param {String} logId - Unique log ID
- * @param {Object} fightsData - Structured fights object
- */
-async function saveToRedis(userId, logId, fightsData) {
-  try {
-    const key = `log:${userId}:${logId}`;
-    await redisConnection.setex(key, 3600, JSON.stringify(fightsData)); // Expires in 1 hour
-    await redisConnection.set(`log:${userId}:latest`, logId);
-    console.log(` Log saved in Redis: ${key}`);
-
-    // ✅ Update processingStatus to "completed" after saving to Redis
-    await prisma.logs.update({
-      where: { logId },
-      data: {
-        processingStatus: "completed",
-        structuredDataPath: `logs/json/log-${logId}.json`, // Store structured log path
-        processedAt: new Date(), // Timestamp for completion
-      },
-    });
-  } catch (error) {
-    console.error(" Redis save error:", error);
-  }
-}
-
-// ✅ NEW: Cache logInstances with name list in Redis
+// NEW: Cache logInstances with name list in Redis
 /**
  * Saves all structured log data to Redis cache to send the logInstances to the user for them to select the log which needs to be uplaoded to db
  * @param {String} userId - User ID
  * @param {String} logId - Unique log ID
  * @param {Object} fightsData - Structured fights object
  */
-// async function cacheInstancesInRedis(logId, logInstances) {
-//   try {
-//     const redisKey = `log:${logId}:instances`;
-
-//     // Store full structured fights
-//     await redisConnection.setex(
-//       redisKey,
-//       900, // 15 minutes
-//       JSON.stringify(logInstances)
-//     );
-
-//     // Update DB status
-//     await prisma.logs.update({
-//       where: { logId },
-//       data: {
-//         processingStatus: "awaiting_user_choice",
-//         processedAt: new Date(),
-//       },
-//     });
-
-//     // Send instance names to client via Redis PubSub
-//     const instanceNames = logInstances.map((i) => i.name);
-
-//     await redisPublisher.publish(
-//       `log:${logId}`,
-//       JSON.stringify({
-//         stage: "awaiting_selection",
-//         progress: 100,
-//         instanceNames,
-//       })
-//     );
-
-//     console.log(`📦 Cached ${logInstances.length} logInstances to Redis`);
-//   } catch (error) {
-//     console.error("❌ Error caching instances in Redis:", error);
-//   }
-// }
 
 async function cacheInstancePointersToRedis(logId, logInstances) {
   try {
@@ -233,36 +178,46 @@ const logWorker = new Worker(
           console.log(` Processing extracted file: ${fileName}`);
 
           //  Parse the log file and structure encounters
-          const structuredFights = await processLogFile(filePath, logId);
+          // const structuredFights = await processLogFile(filePath, logId);
 
           // io.emit(`log:${logId}`, { stage: "parsing", progress: 50 });
-          publishProgress(logId, "parsing", 50);
+          publishProgress(logId, "parsing", 20);
 
           console.log(` Log parsing completed for log ID: ${logId}`);
 
-          //setting up the parsed structured fights in DB
-          // if (structuredFights) {
-          //   console.log(`🔹 Storing log in Redis for quick access...`);
+          // 1. Generate segmented attempts and save as JSON
+          const attemptOutputPath = path.join(extractPath, `attempts.json`);
+          await generateAttemptSegments(filePath, logId, attemptOutputPath);
+          publishProgress(logId, "segmentation", 30);
+          console.log(`✅ Generated segmented attempts for ${logId}`);
 
-          //   console.log(logId);
-          //   // await saveToRedis(userId, logId, structuredFights);
-          //   // Run saveToRedis and PostgreSQL job simultaneously
-          //   await Promise.all([
-          //     // saveToRedis(userId, logId, structuredFights), // Save to Redis
-          //     postgresQueue.add("save-to-postgres", {
-          //       logId,
-          //       structuredFights,
-          //     }), // Save to PostgreSQL
-          //   ]);
+          const job = await damageHealQueue.add("parse-damage-heal", {
+            logId,
+            attemptsPath: attemptOutputPath,
+          });
 
-          //   publishProgress(logId, "saving", 10);
-          // }
+          const structuredFights = await job.waitUntilFinished(
+            damageHealQueueEvents
+          );
+          console.log("✅length", structuredFights.length);
+          console.log("✅array", Array.isArray(structuredFights));
+          console.log(structuredFights);
+
+          //old way of calling processLogFile function
+          // 2. Parse the attempt segments instead of raw txt
+          // const structuredFights = await processLogFile(
+          //   attemptOutputPath,
+          //   logId
+          // );
+          publishProgress(logId, "parsing", 50);
+          console.log(`✅ Log parsing completed for log ID: ${logId}`);
 
           // sending cached instances from redis to user for user selection
           if (structuredFights && Array.isArray(structuredFights)) {
             console.log(`🔹 Caching structured fights (multiple instances)...`);
             await cacheInstancePointersToRedis(logId, structuredFights);
           }
+          // fs.unlinkSync(tempZipPath);
         } else {
           throw new Error(
             ` Invalid file detected: ${fileName}. Only .txt or .log files are allowed.`

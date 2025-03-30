@@ -1,9 +1,9 @@
 import bossesData from "../dictionaries/bosses.json" assert { type: "json" };
 
-console.log(
-  " Bosses JSON Loaded, Available Boss IDs:",
-  Object.keys(bossesData.BOSSES_GUIDS)
-);
+// console.log(
+//   " Bosses JSON Loaded, Available Boss IDs:",
+//   Object.keys(bossesData.BOSSES_GUIDS)
+// );
 
 /**
  * Extracts the unique boss ID from a full GUID.

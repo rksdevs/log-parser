@@ -23,6 +23,36 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
 
   const MAX_GAP = 30000; // 30 seconds for fight reset
 
+  logLines = logLines.map((line) => {
+    if (typeof line === "string") {
+      const firstSpaceIndex = line.indexOf(" ");
+      const secondSpaceIndex = line.indexOf(" ", firstSpaceIndex + 1);
+      const timestamp = line.substring(0, secondSpaceIndex);
+      const eventData = line.substring(secondSpaceIndex + 1);
+      const parts = eventData.split(",");
+      let multiBossEncounter = false;
+      if (line.includes("##MULTIBOSS##")) {
+        // console.log("Multiboss");
+        multiBossEncounter = true;
+        line = line.replace(" ##MULTIBOSS##", ""); // Clean the tag
+      }
+
+      return {
+        timestamp,
+        eventType: parts[0]?.trim(),
+        sourceGUID: parts[1]?.replace("0x", ""),
+        sourceName: parts[2]?.replace(/"/g, ""),
+        targetGUID: parts[4]?.replace("0x", ""),
+        targetName: parts[5]?.replace(/"/g, ""),
+        spellId: parts[7] || null,
+        spellName: parts[8]?.replace(/"/g, "") || null,
+        raw: line,
+        multiBossEncounter,
+      };
+    }
+    return line;
+  });
+
   for (const log of logLines) {
     const {
       timestamp,
@@ -34,9 +64,6 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
       multiBossEncounter,
     } = log;
     const timeInMs = convertTimestampToMs(timestamp);
-
-    // Identify boss from target
-    // const bossName = getBossName(targetGUID);
     let bossName = getBossName(targetGUID) || getBossName(sourceGUID);
     if (multiBossEncounter) {
       const multiBossName =
@@ -131,113 +158,6 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
  * @returns {Object} - Structured fight attempt.
  */
 
-// function processAttempt(
-//   attemptLogs,
-//   bossName,
-//   playerStats,
-//   allGuids,
-//   petOwners
-// ) {
-//   if (attemptLogs.length === 0) return null;
-
-//   const startTime = attemptLogs[0].timestamp;
-//   const endTime = attemptLogs[attemptLogs.length - 1].timestamp;
-
-//   const attemptPlayers = {}; // Players specific to this attempt
-
-//   for (const log of attemptLogs) {
-//     const {
-//       sourceGUID,
-//       sourceName,
-//       eventType,
-//       spellId,
-//       targetGUID,
-//       spellName,
-//     } = log;
-
-//     //  Ensure the player exists in this attempt
-//     if (sourceName && !attemptPlayers[sourceName]) {
-//       attemptPlayers[sourceName] = {
-//         class: playerStats[sourceName]?.class || "Unknown",
-//         damage: 0, //  Ensure initialized
-//         healing: 0, //  Ensure initialized
-//         pets: {},
-//       };
-//     }
-
-//     //  Track Player Damage
-//     if (sourceName && eventType.includes("DAMAGE")) {
-//       //swing damage
-
-//       const damageAmount =
-// (eventType?.trim() === "SWING_DAMAGE"
-//   ? parseInt(log.raw.split(",")[7])
-//   : parseInt(log.raw.split(",")[10])) || 0;
-//       attemptPlayers[sourceName].damage += damageAmount; //  No more undefined errors
-//     }
-
-//     //  Track Healing
-//     if (sourceName && eventType.includes("HEAL")) {
-//       const healingAmount = parseInt(log.raw.split(",")[10]) || 0;
-//       attemptPlayers[sourceName].healing += healingAmount; //  No more undefined errors
-//     }
-
-//     //  Handle Pets
-//     if (sourceGUID && petOwners[sourceGUID]) {
-//       const ownerGUID = petOwners[sourceGUID];
-//       const ownerName = allGuids[ownerGUID]?.name;
-//       const petName = allGuids[sourceGUID]?.name || "Unknown Pet";
-
-//       if (ownerName) {
-//         //  Ensure Owner is Tracked
-//         if (!attemptPlayers[ownerName]) {
-//           attemptPlayers[ownerName] = {
-//             class: playerStats[ownerName]?.class || "Unknown",
-//             damage: 0, //  Ensure initialized
-//             healing: 0, //  Ensure initialized
-//             pets: {},
-//           };
-//         }
-
-//         //  Ensure Pet is Tracked
-//         if (!attemptPlayers[ownerName].pets[petName]) {
-//           attemptPlayers[ownerName].pets[petName] = { damage: 0, healing: 0 };
-//         }
-
-//         //  Track Pet Damage
-//         if (eventType.includes("DAMAGE")) {
-//           const petDamageAmount =
-//             (eventType?.trim() === "SWING_DAMAGE"
-//               ? parseInt(log.raw.split(",")[7])
-//               : parseInt(log.raw.split(",")[10])) || 0;
-//           attemptPlayers[ownerName].pets[petName].damage += petDamageAmount;
-//         }
-
-//         //  Track Pet Healing
-//         if (eventType.includes("HEAL")) {
-//           const petHealingAmount = parseInt(log.raw.split(",")[10]) || 0;
-//           attemptPlayers[ownerName].pets[petName].healing += petHealingAmount;
-//         }
-//       }
-//     }
-//   }
-
-//   return {
-//     boss: bossName,
-//     startTime,
-//     endTime,
-//     logs: attemptLogs.map((log) => ({
-//       timestamp: log.timestamp,
-//       eventType: log.eventType,
-//       sourceGUID: log.sourceGUID,
-//       targetGUID: log.targetGUID,
-//       spellId: log.spellId,
-//       spellName: log.spellName,
-//     })),
-//     players: attemptPlayers, //  Players with per-attempt stats
-//   };
-// }
-
 function processAttempt(
   attemptLogs,
   bossName,
@@ -302,13 +222,6 @@ function processAttempt(
       spellName,
       spellId,
     } = log;
-    // console.log(log, "from fight sep");
-    // console.log(
-    //   "damage breakdown from process attempts",
-    //   damageBreakdown,
-    //   spellName
-    // );
-    // console.log("healing breakdown from process attempts", healingBreakdown);
 
     //  Ensure player is initialized
     if (sourceName && !attemptPlayers[sourceName]) {
@@ -392,30 +305,6 @@ function processAttempt(
       damageByPlayer[sourceName] += damageBreakdown.amount;
     }
 
-    //  Track Player Damage (Direct)
-    // if (sourceName && eventType.includes("DAMAGE")) {
-    //   // const damageAmount = parseInt(raw.split(",")[10]) || 0;
-    //   const damageAmount =
-    //     (eventType?.trim() === "SWING_DAMAGE"
-    //       ? parseInt(raw.split(",")[7])
-    //       : parseInt(raw.split(",")[10])) || 0;
-    //   attemptPlayers[sourceName].playerDamage += damageAmount; //  Only player's damage
-    //   attemptPlayers[sourceName].playerTotalDamage += damageAmount; //  Player + pet damage
-    //   overallDamage += damageAmount; //  Add to total fight damage
-
-    //   //  Store in `damageByPlayer`
-    //   if (!damageByPlayer[sourceName]) {
-    //     damageByPlayer[sourceName] = 0;
-    //   }
-    //   damageByPlayer[sourceName] += damageAmount;
-    // }
-
-    // //  Track Healing
-    // if (sourceName && eventType.includes("HEAL")) {
-    //   const healingAmount = parseInt(raw.split(",")[10]) || 0;
-    //   attemptPlayers[sourceName].healing += healingAmount;
-    // }
-
     //  Handle Pets
     if (sourceGUID && petOwners[sourceGUID]) {
       const ownerGUID = petOwners[sourceGUID];
@@ -459,14 +348,15 @@ function processAttempt(
     endTime,
     overallDamage, //  Total damage in this attempt
     damageByPlayer, //  Breakdown of only player’s direct damage
-    logs: attemptLogs.map((log) => ({
-      timestamp: log.timestamp,
-      eventType: log.eventType,
-      sourceGUID: log.sourceGUID,
-      targetGUID: log.targetGUID,
-      spellId: log.spellId,
-      spellName: log.spellName,
-    })),
+    // logs: attemptLogs.map((log) => ({
+    //   timestamp: log.timestamp,
+    //   eventType: log.eventType,
+    //   sourceGUID: log.sourceGUID,
+    //   targetGUID: log.targetGUID,
+    //   spellId: log.spellId,
+    //   spellName: log.spellName,
+    // })),
+    logs: attemptLogs.map((log) => log.raw).filter(Boolean),
     players: attemptPlayers, //  Players with separated damage stats
   };
 }
