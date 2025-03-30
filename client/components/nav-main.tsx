@@ -2,6 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "./ui/sidebar";
+import { MailIcon, PlusCircleIcon, Swords } from "lucide-react";
+import { Button } from "./ui/button";
 
 interface SidebarItem {
   encounter: string;
@@ -18,45 +31,35 @@ export function NavMain({ items }: { items?: SidebarItem[] }) {
   const logId = pathname.split("/")[2]; // Extract logId dynamically
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold">Encounters</h2>
-      <ul className="list-none">
-        {navItems.map((encounter) => {
-          const encounterSlug = encodeURIComponent(encounter.encounter);
+    // <div className="p-4 flex flex-col justify-start gap-12">
 
-          return (
-            <li key={encounter.encounter} className="mt-4">
-              {/* Encounter Link */}
-              <Link
-                href={encounter.url}
-                className="text-lg font-semibold text-blue-500 hover:underline"
-              >
-                {encounter.encounter}
-              </Link>
-
-              {/* Attempt List */}
-              <ul className="ml-4 mt-2 list-disc">
-                {encounter.bosses.flatMap((boss) =>
-                  boss.attempts.map((attempt) => {
-                    const attemptSlug = encodeURIComponent(attempt.start);
-
-                    return (
-                      <li key={attempt.name} className="mt-1">
-                        <Link
-                          href={attempt.url}
-                          className="text-blue-400 hover:underline"
-                        >
-                          {attempt.name}
+    // </div>
+    <Sidebar className="fixed top-16">
+      <SidebarHeader>
+        <h2 className="text-xl font-bold">Encounters</h2>
+      </SidebarHeader>
+      <SidebarContent>
+        {navItems.map((encounter) => (
+          <SidebarGroup key={encounter?.encounter}>
+            <SidebarGroupLabel>{encounter?.encounter}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {encounter?.bosses?.flatMap((boss) =>
+                  boss?.attempts?.map((attempt) => (
+                    <SidebarMenuItem key={attempt.name}>
+                      <SidebarMenuButton asChild>
+                        <Link href={attempt.url} className="">
+                          {`${attempt.name.substring(0, 20)}...`}
                         </Link>
-                      </li>
-                    );
-                  })
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))
                 )}
-              </ul>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
+    </Sidebar>
   );
 }

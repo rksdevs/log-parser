@@ -98,6 +98,12 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
 
   // Push last instance
   if (Object.keys(currentInstance.rawBossLogs).length > 0) {
+    if (!currentInstance.encounterStartTime) {
+      currentInstance.encounterStartTime = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
+    }
     logInstances.push({ ...currentInstance });
   }
 
@@ -159,6 +165,7 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
   console.log(
     `✅ Segmented ${structured.length} log instances for log ${logId}`
   );
+  return structured;
 }
 
 // generateAttemptSegments("../server/logs/json/2-togc-10-inno.txt", 215);

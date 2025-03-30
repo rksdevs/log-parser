@@ -17,6 +17,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
+import { NavMain } from "@/components/nav-main";
 
 export default function LogsLayout({
   children,
@@ -24,7 +25,7 @@ export default function LogsLayout({
   children: React.ReactNode;
 }) {
   const { logId } = useParams(); // Extract logId dynamically
-  const [navigationData, setNavigationData] = useState(null);
+  const [navigationData, setNavigationData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,30 +45,32 @@ export default function LogsLayout({
   }, [logId]);
 
   return (
-    <SidebarProvider>
-      {loading ? (
-        <div className="w-64 h-screen flex items-center justify-center">
-          <p>Loading Sidebar...</p>
-        </div>
-      ) : (
-        <AppSidebar navItems={navigationData} />
-      )}
+    <SidebarProvider className="z-0 inset-y-10">
+      <div className="flex w-full">
+        {loading ? (
+          <div className="w-64 h-screen flex items-center justify-center">
+            <p>Loading Sidebar...</p>
+          </div>
+        ) : (
+          <NavMain items={navigationData} />
+        )}
 
-      <SidebarInset>
-        <header className="flex h-16 items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbPage>Encounter Overview</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </header>
+        <SidebarInset className="w-full">
+          <header className="flex h-16 items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Encounter Overview</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </header>
 
-        <main className="p-4">{children}</main>
-      </SidebarInset>
+          <main className="p-4">{children}</main>
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

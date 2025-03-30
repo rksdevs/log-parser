@@ -232,16 +232,17 @@ model Attempt {
 }
 
 model AllActor {
-  id               Int      @id @default(autoincrement())
-  attempt          Attempt  @relation(fields: [attemptId], references: [id])
-  attemptId        String
-  actorName        String
-  class            String
-  actorDamage      Int
-  actorTotalDamage Int
-  healing          Int
-  pets             String[] @default([])
+  id        Int     @id @default(autoincrement())
+  attempt   Attempt @relation(fields: [attemptId], references: [id])
+  attemptId String
+  actorName String
+  // class            String
+  // actorDamage      Int
+  // actorTotalDamage Int
+  // healing          Int
+  // pets             String[] @default([])
   // spellList        Json
+  data      Json
 }
 
 model Log {
@@ -279,8 +280,11 @@ model Player {
   id             Int                  @id @default(autoincrement())
   name           String
   class          String?
+  guid           String?
   attempts       AttemptParticipant[]
   SpellStatistic SpellStatistic[]
+
+  @@unique([guid, name])
 }
 
 model AttemptParticipant {

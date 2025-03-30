@@ -138,6 +138,7 @@ import readline from "readline";
 import path from "path";
 import { fileURLToPath } from "url";
 import { resolvePetRelationsFromLogs } from "../helpers/petRelationResolver.js";
+import { getBossName, getMultiBossName } from "../helpers/bossHelper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -150,6 +151,17 @@ function parseTimestampToDate(logTimestamp) {
   const now = new Date();
   const year = now.getFullYear();
   return new Date(year, month - 1, day, +hours, +minutes, +sec, +millis);
+}
+
+function parseTimestampToMs(timestamp) {
+  try {
+    const [date, time] = timestamp.split(" ");
+    const [month, day] = date.split("/").map(Number);
+    const [hours, minutes, seconds] = time.split(":").map(Number);
+    return new Date(2025, month - 1, day, hours, minutes, seconds).getTime();
+  } catch (e) {
+    return 0;
+  }
 }
 
 function getEncounterStartTime(line) {
@@ -200,7 +212,7 @@ const petWorker = new Worker(
 
     for (const lines of logInstances) {
       const rawLogLines = [];
-
+      let bossStartTimestamp = null;
       for (const line of lines) {
         const firstSpaceIndex = line.indexOf(" ");
         const secondSpaceIndex = line.indexOf(" ", firstSpaceIndex + 1);
@@ -218,6 +230,17 @@ const petWorker = new Worker(
         const spellId = parts[7] || null;
         const spellName = parts[8]?.replace(/"/g, "") || null;
 
+        // Detect first boss
+        const bossName =
+          getBossName(targetGUID) ||
+          getBossName(sourceGUID) ||
+          getMultiBossName(targetGUID) ||
+          getMultiBossName(sourceGUID);
+
+        if (bossName && !bossStartTimestamp) {
+          bossStartTimestamp = parseTimestampToMs(timestamp);
+        }
+
         rawLogLines.push({
           timestamp,
           eventType,
@@ -234,7 +257,11 @@ const petWorker = new Worker(
       const result = resolvePetRelationsFromLogs(rawLogLines);
 
       output.instances.push({
-        encounterStartTime: getEncounterStartTime(lines[0]),
+        encounterStartTime:
+          new Date(bossStartTimestamp)
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " ") || getEncounterStartTime(lines[0]),
         petOwners: result.petOwners,
         petsPerma: result.petsPerma,
         missingOwner: result.missingOwner,
@@ -263,3 +290,5 @@ petWorker.on("completed", (job) =>
 petWorker.on("failed", (job, err) =>
   console.error(`❌ PetWorker failed for logId ${job?.data?.logId}`, err)
 );
+
+console.log("Pets worker started....");

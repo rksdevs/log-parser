@@ -10,6 +10,21 @@ import {
   ColumnDef,
   createColumnHelper,
 } from "@tanstack/react-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface SpellStats {
   spellName: string;
@@ -19,11 +34,13 @@ interface SpellStats {
   totalCasts: number;
   normalHits: number;
   criticalHits: number;
+  petName: string;
 }
 
 export default function PlayerSpellsPage() {
   const { logId, encounter, attempt, playerName } = useParams();
   const [spellData, setSpellData] = useState<SpellStats[]>([]);
+  const [petSpellData, setPetSpellData] = useState<SpellStats[]>([]);
 
   useEffect(() => {
     if (!logId || !encounter || !attempt || !playerName) return;
@@ -33,7 +50,18 @@ export default function PlayerSpellsPage() {
       )
       .then((response) => {
         console.log("API response:", response.data);
-        const filteredData = response.data.map((spell: any) => ({
+        const filteredDataPlayer = response.data.playerSpells.map(
+          (spell: any) => ({
+            spellName: spell.spellName,
+            icon: spell.icon,
+            totalDamage: spell.totalDamage,
+            usefulDamage: spell.usefulDamage,
+            totalCasts: spell.totalCasts,
+            normalHits: spell.normalHits,
+            criticalHits: spell.criticalHits,
+          })
+        );
+        const filteredDataPets = response.data.petSpells.map((spell: any) => ({
           spellName: spell.spellName,
           icon: spell.icon,
           totalDamage: spell.totalDamage,
@@ -41,8 +69,10 @@ export default function PlayerSpellsPage() {
           totalCasts: spell.totalCasts,
           normalHits: spell.normalHits,
           criticalHits: spell.criticalHits,
+          petName: spell.petName,
         }));
-        setSpellData(filteredData);
+        setSpellData(filteredDataPlayer);
+        setPetSpellData(filteredDataPets);
       })
       .catch((error) => console.error("Error fetching spell data:", error));
   }, [logId, encounter, attempt, playerName]);
@@ -79,47 +109,122 @@ export default function PlayerSpellsPage() {
     { accessorKey: "criticalHits", header: "Crits" },
   ];
 
-  const table = useReactTable({
+  const playerTable = useReactTable({
     data: spellData || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const petTable = useReactTable({
+    data: petSpellData || [],
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  useEffect(() => {
+    if (petSpellData.length) {
+      console.log(petSpellData);
+    }
+  }, [petSpellData]);
+
   if (!spellData.length) return <div>Loading...</div>;
 
   return (
-    <div className="p-6 border rounded-lg shadow">
+    <div className="flex w-full flex-col justify-start gap-6 p-6 max-w-full">
       <h2 className="text-2xl font-bold mb-4">Player: {playerName}'s Spells</h2>
-      <table className="w-full border-collapse border mt-4">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="border px-4 py-2 bg-gray-100 text-left"
-                >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="border">
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="border px-4 py-2">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <Card>
+        <CardHeader>
+          <CardTitle>{playerName}</CardTitle>
+          <CardDescription>{playerName}'s Spell breakdown</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg border overflow-hidden">
+            <Table>
+              <TableHeader className="sticky top-0 z-10 bg-muted">
+                {playerTable.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id} colSpan={header.colSpan}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody className="**:data-[slot=table-cell]:first:w-8">
+                {playerTable.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} className="border">
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="border px-4 py-2">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {petSpellData.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{petSpellData[0]?.petName}</CardTitle>
+            <CardDescription>
+              {petSpellData[0]?.petName}'s Spell breakdown
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-muted">
+                  {petTable.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => {
+                        return (
+                          <TableHead key={header.id} colSpan={header.colSpan}>
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                          </TableHead>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody className="**:data-[slot=table-cell]:first:w-8">
+                  {petTable.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} className="border">
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="border px-4 py-2">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { postgresQueue } from "../queues/postgresQueue.js";
+import { mergeQueue } from "../queues/mergeQueue.js";
 
 // const postgresQueue = new Queue("postgres-save-queue-new", {
 //   connection: redisConnection,
@@ -49,17 +50,59 @@ export const selectLogInstance = async (req, res) => {
 
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const selectedInstance = JSON.parse(fileContent);
-
-    // const selectedInstance = instances[selectedIndex];
+    const encounterStartTime = selectedInstance.encounterStartTime;
     console.log(
-      "✅ Queuing selected instance with structure:",
-      Object.keys(selectedInstance.fights)
+      { name: selectedInstance.name, encounterStartTime },
+      "✅ selected instance ...."
     );
 
-    await postgresQueue.add("save-to-postgres", {
+    // const selectedInstance = instances[selectedIndex];
+    // console.log(
+    //   "✅ Queuing selected instance with structure:",
+    //   Object.keys(selectedInstance.fights)
+    // );
+
+    const parsedPath = path.join(
+      __dirname,
+      "../logs/json",
+      `log-${logId}-parsed.json`
+    );
+
+    if (!fs.existsSync(parsedPath)) {
+      return res
+        .status(404)
+        .json({ error: "Parsed data not found for this logId" });
+    }
+
+    const parsedInstances = JSON.parse(fs.readFileSync(parsedPath, "utf-8"));
+    const enrichedInstance = parsedInstances.find(
+      (inst) => inst.encounterStartTime === encounterStartTime
+    );
+
+    const parsedInstanceStartTimes = parsedInstances.map(
+      (inst) => inst.encounterStartTime
+    );
+
+    // console.log(
+    //   "✅Parsed instance start time from the parsed data set",
+    //   parsedInstanceStartTimes
+    // );
+
+    if (!enrichedInstance) {
+      return res.status(404).json({
+        error: "Structured instance not found for selected encounterStartTime",
+      });
+    }
+
+    // console.log(
+    //   "✅ Queuing enriched instance with structure:",
+    //   enrichedInstance
+    // );
+
+    await mergeQueue.add("merge-worker", {
       logId: parseInt(logId),
-      //   structuredFights: [selectedInstance],
-      structuredFights: selectedInstance.fights,
+      selectedInstanceTime: enrichedInstance.encounterStartTime,
+      structuredFights: enrichedInstance.fights,
     });
 
     await prisma.logs.update({
@@ -70,7 +113,7 @@ export const selectLogInstance = async (req, res) => {
     // 🧼 Cleanup
     const instanceDir = path.dirname(filePath);
     fs.rmSync(instanceDir, { recursive: true, force: true });
-
+    // fs.unlinkSync(parsedPath); // delete enriched JSON
     await redisConnection.del(redisKey);
 
     return res.status(200).json({

@@ -40,38 +40,51 @@ const postgresWorker = new Worker(
       publishProgress(logId, "saving to database", 10);
       console.log(`📌 Fetching existing players from DB...`);
       const existingPlayers = await prisma.player.findMany({
-        select: { id: true, name: true },
+        select: { id: true, name: true, guid: true },
       });
-      let playerMap = new Map(existingPlayers.map((p) => [p.name, p.id]));
+      // let playerMap = new Map(existingPlayers.map((p) => [p.name, p.id]));
+      let playerMap = new Map(
+        existingPlayers.map((p) => [`${p.name}_${p.guid || ""}`, p.id])
+      );
 
       const newPlayers = new Set();
       const uniquePlayersData = [];
 
       for (const encounterName in structuredFights) {
-        // console.log(encounterName, "encounter name");
         for (const bossName in structuredFights[encounterName]) {
-          // console.log(bossName, "boss name");
-          // if (!Array.isArray(attempts)) {
-          //   console.warn(
-          //     `⚠️ Skipping boss ${bossName} in encounter ${encounterName} — not iterable`
-          //   );
-          //   continue;
-          // }
           for (const attempt of structuredFights[encounterName][bossName]) {
-            // console.log(attempt, "attempt name");
-
             for (const actorName in attempt.allActors) {
-              if (!playerMap.has(actorName)) {
-                const isLikelyPlayer =
-                  actorName.length > 2 &&
-                  actorName[0] === actorName[0].toUpperCase();
-                if (isLikelyPlayer && !newPlayers.has(actorName)) {
-                  newPlayers.add(actorName);
-                  uniquePlayersData.push({
-                    name: actorName,
-                    class: attempt.allActors[actorName].class || "Unknown",
-                  });
-                }
+              const actor = attempt.allActors[actorName];
+              const guid = actor.guid || "";
+              const key = `${actorName}_${guid}`;
+              const isLikelyPlayer =
+                actorName.length > 2 &&
+                actorName[0] === actorName[0].toUpperCase();
+              // if (!playerMap.has(actorName)) {
+              //   const isLikelyPlayer =
+              //     actorName.length > 2 &&
+              //     actorName[0] === actorName[0].toUpperCase();
+              //   if (isLikelyPlayer && !newPlayers.has(actorName)) {
+              //     newPlayers.add(actorName);
+              //     uniquePlayersData.push({
+              //       name: actorName,
+              //       class: actorToPush.class || "Unknown",
+              //       guid: actorToPush.guid,
+              //     });
+              //   }
+              // }
+
+              if (
+                isLikelyPlayer &&
+                !playerMap.has(key) &&
+                !newPlayers.has(key)
+              ) {
+                newPlayers.add(key);
+                uniquePlayersData.push({
+                  name: actorName,
+                  class: actor.class || "Unknown",
+                  guid: guid || null,
+                });
               }
             }
           }
@@ -82,9 +95,12 @@ const postgresWorker = new Worker(
         console.log(`📌 Inserting ${uniquePlayersData.length} new players...`);
         await prisma.player.createMany({ data: uniquePlayersData });
         const updatedPlayers = await prisma.player.findMany({
-          select: { id: true, name: true },
+          select: { id: true, name: true, guid: true },
         });
-        playerMap = new Map(updatedPlayers.map((p) => [p.name, p.id]));
+        // playerMap = new Map(updatedPlayers.map((p) => [p.name, p.id]));
+        playerMap = new Map(
+          updatedPlayers.map((p) => [`${p.name}_${p.guid || ""}`, p.id])
+        );
       }
 
       publishProgress(logId, "saving to database", 30);
@@ -114,25 +130,35 @@ const postgresWorker = new Worker(
 
             for (const actorName in attempt.allActors) {
               const actor = attempt.allActors[actorName];
-              const playerId = playerMap.get(actorName) || null;
+              const guidKey = `${actorName}_${actor.guid || ""}`;
+              // const playerId = playerMap.get(actorName) || null;
+              const playerId = playerMap.get(guidKey) || null;
 
+              // allActorInserts.push({
+              //   attemptId,
+              //   actorName,
+              //   class: actor.class || "Unknown",
+              //   actorDamage: actor.actorDamage || 0,
+              //   actorTotalDamage: actor.actorTotalDamage || 0,
+              //   actorDamage: actor.actorDamage || 0,
+              //   actorTotalDamage: actor.actorTotalDamage || 0,
+              //   healing: actor.healing || 0,
+              //   pets: Object.keys(actor.pets || {}),
+              //   // spellList: actor.spellList || {},
+              // });
+
+              //pushing all the actors
               allActorInserts.push({
                 attemptId,
                 actorName,
-                class: actor.class || "Unknown",
-                actorDamage: actor.actorDamage || 0,
-                actorTotalDamage: actor.actorTotalDamage || 0,
-                actorDamage: actor.actorDamage || 0,
-                actorTotalDamage: actor.actorTotalDamage || 0,
-                healing: actor.healing || 0,
-                pets: Object.keys(actor.pets || {}),
-                // spellList: actor.spellList || {},
+                data: actor, // <-- this includes class, spells, pets, everything
               });
 
               if (playerId) {
                 for (const spellName in actor.spellList) {
                   const spell = actor.spellList[spellName];
 
+                  //pushing all the spell details for a certain spell
                   spellStatisticInserts.push({
                     attemptId,
                     playerId,
@@ -153,10 +179,23 @@ const postgresWorker = new Worker(
                   });
                 }
 
+                // attemptParticipantInserts.push({
+                //   attemptId,
+                //   playerId,
+                //   damageDone: actor.actorDamage || 0,
+                //   healingDone: actor.healing || 0,
+                // });
+
+                //pushing individal actor details for all actors inside a particular attempt
                 attemptParticipantInserts.push({
                   attemptId,
                   playerId,
-                  damageDone: actor.actorDamage || 0,
+                  damageDone:
+                    (actor.actorDamage || 0) +
+                    Object.values(actor.pets || {}).reduce(
+                      (acc, pet) => acc + (pet.actorDamage || 0),
+                      0
+                    ),
                   healingDone: actor.healing || 0,
                 });
               }
@@ -206,9 +245,18 @@ const postgresWorker = new Worker(
       for (const encounter of Object.values(structuredFights)) {
         for (const boss of Object.values(encounter)) {
           for (const attempt of boss) {
-            Object.keys(attempt.allActors).forEach((actor) => {
-              if (playerMap.has(actor)) allPlayersSet.add(actor);
-            });
+            // Object.keys(attempt.allActors).forEach((actor) => {
+            //   if (playerMap.has(actor)) allPlayersSet.add(actor);
+            // });
+
+            Object.entries(attempt.allActors).forEach(
+              ([actorName, actorData]) => {
+                const guidKey = `${actorName}_${actorData.guid || ""}`;
+                if (playerMap.has(guidKey)) {
+                  allPlayersSet.add(actorName);
+                }
+              }
+            );
           }
         }
       }

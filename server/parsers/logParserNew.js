@@ -239,7 +239,7 @@ async function processLogFile(attemptsFilePath, logId) {
 
   for (const instance of logInstances) {
     const structuredFights = {};
-    const { fights, name } = instance;
+    const { fights, name, encounterStartTime } = instance;
 
     for (const encounterName in fights) {
       const encounter = fights[encounterName];
@@ -283,6 +283,7 @@ async function processLogFile(attemptsFilePath, logId) {
                 healing: 0,
                 pets: {},
                 spellList: {},
+                guid: sourceGUID,
               };
             }
 
@@ -307,7 +308,7 @@ async function processLogFile(attemptsFilePath, logId) {
                 damageCritical = parts[16]?.trim() !== "nil";
 
                 const playerClass = getPlayerClassFromSpell(spellId);
-                if (allActors[sourceName].class === "Unknown") {
+                if (allActors[sourceName].class === "Unknown" && playerClass) {
                   allActors[sourceName].class = playerClass;
                 }
               }
@@ -372,6 +373,7 @@ async function processLogFile(attemptsFilePath, logId) {
     structuredFightsArray.push({
       name,
       fights: structuredFights,
+      encounterStartTime,
     });
   }
 
