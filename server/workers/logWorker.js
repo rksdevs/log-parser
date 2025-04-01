@@ -197,7 +197,7 @@ const logWorker = new Worker(
             logId,
             attemptOutputPath
           );
-          console.log(structuredLogInstances);
+          // console.log(structuredLogInstances);
 
           const petJob = await petQueue.add("parse-pets", {
             logId,

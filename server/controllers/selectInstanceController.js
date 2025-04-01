@@ -51,10 +51,10 @@ export const selectLogInstance = async (req, res) => {
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const selectedInstance = JSON.parse(fileContent);
     const encounterStartTime = selectedInstance.encounterStartTime;
-    console.log(
-      { name: selectedInstance.name, encounterStartTime },
-      "✅ selected instance ...."
-    );
+    // console.log(
+    //   { name: selectedInstance.name, encounterStartTime },
+    //   "✅ selected instance ...."
+    // );
 
     // const selectedInstance = instances[selectedIndex];
     // console.log(

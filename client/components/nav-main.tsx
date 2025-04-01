@@ -1,65 +1,71 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { type Icon } from "@tabler/icons-react";
 import {
-  Sidebar,
-  SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "./ui/sidebar";
-import { MailIcon, PlusCircleIcon, Swords } from "lucide-react";
-import { Button } from "./ui/button";
+} from "@/components/ui/sidebar";
+import { List, Upload } from "lucide-react";
+import Link from "next/link";
 
-interface SidebarItem {
-  encounter: string;
-  url: string;
-  bosses: {
-    name: string;
-    attempts: { name: string; start: string; end: string; url: string }[];
+export function NavMain({
+  items,
+}: {
+  items: {
+    title: string;
+    url: string;
+    icon?: Icon;
   }[];
-}
-
-export function NavMain({ items }: { items?: SidebarItem[] }) {
-  const navItems = Array.isArray(items) ? items : []; // Ensure items is always an array
-  const pathname = usePathname();
-  const logId = pathname.split("/")[2]; // Extract logId dynamically
-
+}) {
   return (
-    // <div className="p-4 flex flex-col justify-start gap-12">
-
-    // </div>
-    <Sidebar className="fixed top-16">
-      <SidebarHeader>
-        <h2 className="text-xl font-bold">Encounters</h2>
-      </SidebarHeader>
-      <SidebarContent>
-        {navItems.map((encounter) => (
-          <SidebarGroup key={encounter?.encounter}>
-            <SidebarGroupLabel>{encounter?.encounter}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {encounter?.bosses?.flatMap((boss) =>
-                  boss?.attempts?.map((attempt) => (
-                    <SidebarMenuItem key={attempt.name}>
-                      <SidebarMenuButton asChild>
-                        <Link href={attempt.url} className="">
-                          {`${attempt.name.substring(0, 20)}...`}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-    </Sidebar>
+    <SidebarGroup>
+      <SidebarGroupContent className="flex flex-col gap-2">
+        <SidebarMenu className="gap-2">
+          <SidebarMenuItem className="flex items-center gap-2">
+            <SidebarMenuButton
+              tooltip="Upload"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear pl-3"
+            >
+              <Link
+                href="/"
+                className="flex items-center justify-start w-full gap-12"
+              >
+                <span>Upload</span>
+                <Upload className="w-4" />
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="flex items-center gap-2">
+            <SidebarMenuButton
+              tooltip="All Logs"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear pl-3"
+            >
+              <Link
+                href="/all-logs"
+                className="flex items-center justify-start w-full gap-2"
+              >
+                <span>View All Logs</span>
+                <List className="w-4" />
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <SidebarGroupLabel className="mt-4">Default Pages</SidebarGroupLabel>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton tooltip={item.title}>
+                {item.icon && <item.icon />}
+                <span>{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }

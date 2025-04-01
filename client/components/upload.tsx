@@ -1,11 +1,9 @@
 "use client";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -27,24 +25,22 @@ import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import { Progress } from "./ui/progress";
 import { Badge } from "./ui/badge";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // const socket = io("http://localhost:8000");
 
-export function Upload({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function Upload() {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [enableUpload, setEnableUpload] = useState<boolean>(false);
   const [serverName, setServerName] = useState<string>("");
   const [logId, setLogId] = useState<string>("");
-  const [status, setStatus] = useState<string>("processing");
+  //   const [status, setStatus] = useState<string>("processing");
   const [progress, setProgress] = useState({ stage: "", progress: 0 });
   const [instanceNames, setInstanceNames] = useState<string[]>([]);
   const [isSelectingInstance, setIsSelectingInstance] = useState(false);
-  const { toast } = useToast();
+  //   const { toast } = useToast();
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -53,19 +49,13 @@ export function Upload({
       //  Enforce .zip file uploads
       if (!e.target.files[0].name.endsWith(".zip")) {
         setEnableUpload(false);
-        toast({
-          title: "Please upload a .zip file only!",
-          variant: "destructive",
+        toast("Incorrect upload file format", {
+          description: "Please upload a .zip file only!",
         });
         return;
       }
       setSelectedFile(e.target.files[0]);
     }
-  };
-
-  const handleNavigation = () => {
-    if (!logId) return;
-    router.push(`/logs/${logId}`);
   };
 
   const handleUploadMetadata = async (metadata: LogsMetadata) => {
@@ -102,10 +92,11 @@ export function Upload({
       const { uploadUrl, newFileName } = presignedurlRes.data;
       const decodedUrl = decodeURIComponent(uploadUrl);
 
-      const uploadFile = await axios.put(decodedUrl, selectedFile, {
+      await axios.put(decodedUrl, selectedFile, {
         headers: {
           "Content-Type": selectedFile?.type,
         },
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         transformRequest: [(data, headers) => data],
       });
 
@@ -142,27 +133,30 @@ export function Upload({
           },
         }
       );
-      toast({
-        title: "Log Instance Selected",
-        description: `Log Instance - ${selectedIndex} is sent to save in DB`,
+
+      toast("Log Instance Selected", {
+        description: "Log Instance - ${selectedIndex} is sent to save in DB",
       });
       setIsSelectingInstance(false);
       setInstanceNames([]);
     } catch (error) {
-      toast({
-        title: "Error Selecting Log Instance",
-        description: `Something went wrong! Error: ${error}`,
-        variant: "destructive",
+      toast("Error Selecting Log Instance", {
+        description: "Something went wrong! Error: ${error}",
       });
       console.error(error);
     }
   };
 
   useEffect(() => {
-    if (selectedFile && serverName) setEnableUpload(true);
+    // if (selectedFile && serverName) setEnableUpload(true);
+    setEnableUpload(!!selectedFile && !!serverName);
   }, [selectedFile, serverName]);
 
   useEffect(() => {
+    const handleNavigation = () => {
+      if (!logId) return;
+      router.push(`/${logId}`);
+    };
     if (!logId) return;
 
     console.log("🔍 Listening for WebSocket event:", `log:${logId}`);
@@ -192,11 +186,11 @@ export function Upload({
     return () => {
       socket.off(`log:${logId}`);
     };
-  }, [logId]);
+  }, [logId, router]);
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+    <div className="flex items-center justify-center w-full">
+      <Card className="w-1/4 max-w-1/4">
         <CardHeader>
           <CardTitle className="text-2xl">Log Parser</CardTitle>
           <CardDescription>Upload your log txt file below</CardDescription>
@@ -221,7 +215,11 @@ export function Upload({
                   onValueChange={(e) => setServerName(e)}
                   required
                 >
-                  <SelectTrigger id="server" aria-label="Select Server">
+                  <SelectTrigger
+                    id="server"
+                    aria-label="Select Server"
+                    className="w-full"
+                  >
                     <SelectValue placeholder="Select Server" />
                   </SelectTrigger>
                   <SelectContent>
@@ -238,7 +236,11 @@ export function Upload({
                 </Select>
               </div>
 
-              <Button type="submit" className="w-full" disabled={!enableUpload}>
+              <Button
+                type="submit"
+                className="w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!enableUpload}
+              >
                 Upload
               </Button>
             </div>
@@ -248,12 +250,12 @@ export function Upload({
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle>Processing Log: {logId}</CardTitle>
-                  <CardDescription>
-                    <span className="font-medium text-primary">Stage:</span>{" "}
-                    <Badge className="pb-1">{progress.stage}</Badge>
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="py-2">
+                    <span className="font-medium text-primary">Stage:</span>{" "}
+                    <Badge className="pb-1">{progress.stage}</Badge>
+                  </div>
                   <p>
                     <span className="font-medium">Status: </span>{" "}
                     {progress.stage === "saving to database completed"
@@ -261,9 +263,7 @@ export function Upload({
                       : `${progress.progress}%`}
                   </p>
                   {progress.stage !== "saving to database completed" && (
-                    <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
-                      <Progress value={progress.progress} />
-                    </div>
+                    <Progress value={progress.progress} />
                   )}
                   {isSelectingInstance && (
                     <div className="mt-4 space-y-2">
@@ -276,6 +276,7 @@ export function Upload({
                             key={index}
                             onClick={() => handleInstanceSelection(index)}
                             variant="outline"
+                            // className="hover:cursor-pointer"
                           >
                             {name}
                           </Button>
@@ -285,12 +286,12 @@ export function Upload({
                   )}
                 </CardContent>
                 {/* <CardFooter>
-                  {progress.stage === "saving to database completed" && (
-                    <Button className="w-full" onClick={handleNavigation}>
-                      View Log
-                    </Button>
-                  )}
-                </CardFooter> */}
+                {progress.stage === "saving to database completed" && (
+                  <Button className="w-full" onClick={handleNavigation}>
+                    View Log
+                  </Button>
+                )}
+              </CardFooter> */}
               </Card>
             </div>
           )}

@@ -165,7 +165,7 @@ const postgresWorker = new Worker(
                     playerName: actorName,
                     spellId: spell.spellId,
                     spellName,
-                    totalDamage: spell.totalDamage,
+                    totalDamage: spell.totalDamage || 0,
                     usefulDamage: spell.usefulDamage,
                     totalCasts: spell.totalCasts,
                     normalHits: spell.normalHits,
