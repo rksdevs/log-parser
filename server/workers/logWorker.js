@@ -1,258 +1,220 @@
-import { Worker, Queue, QueueEvents } from "bullmq";
-import { redisConnection } from "../config/redis.js";
-import AWS from "aws-sdk";
-import fs from "fs";
-import dotenv from "dotenv";
-import path from "path";
-import { PrismaClient } from "@prisma/client";
-import { fileURLToPath } from "url";
-import AdmZip from "adm-zip";
-// import { processLogFile } from "../parsers/logParser.js";
-import Redis from "ioredis";
-import { generateAttemptSegments } from "./attemptSegmentWorker.js";
-import {
-  damageHealQueue,
-  damageHealQueueEvents,
-} from "../queues/damageHealQueue.js";
-import { petQueue, petQueueEvents } from "../queues/petQueue.js";
+// import { Worker } from "bullmq";
+// import { redisConnection } from "../config/redis.js";
+// import AWS from "aws-sdk";
+// import fs from "fs";
+// import dotenv from "dotenv";
+// import path from "path";
+// import { PrismaClient } from "@prisma/client";
+// import { fileURLToPath } from "url";
+// import AdmZip from "adm-zip";
+// import Redis from "ioredis";
+// // import { generateAttemptSegments } from "./newAttemptSegmentWorker.js";
+// import { generateAttemptSegments } from "./generateAttemptsV3.js";
+// // import { generateAttemptSegments } from "./attemptSegmentWorker.js";
 
-dotenv.config();
-const prisma = new PrismaClient();
-const redisPublisher = new Redis(
-  process.env.REDIS_URL || "redis://localhost:6379"
-);
+// import {
+//   damageHealQueue,
+//   damageHealQueueEvents,
+// } from "../queues/damageHealQueue.js";
+// import { petQueue, petQueueEvents } from "../queues/petQueue.js";
 
-// ✅ Function to Publish Events to Redis Instead of Emitting Directly
-const publishProgress = async (logId, stage, progress) => {
-  const message = JSON.stringify({ stage, progress });
-  console.log(
-    `🚀 Publishing progress update to Redis: log:${logId} - ${stage} (${progress}%)`
-  );
-  await redisPublisher.publish(`log:${logId}`, message);
-};
+// dotenv.config();
+// const prisma = new PrismaClient();
+// const redisPublisher = new Redis(
+//   process.env.REDIS_URL || "redis://localhost:6379"
+// );
 
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: "ap-south-1",
-});
+// const publishProgress = async (logId, stage, progress) => {
+//   const message = JSON.stringify({ stage, progress });
+//   console.log(
+//     `🚀 Publishing progress update to Redis: log:${logId} - ${stage} (${progress}%)`
+//   );
+//   await redisPublisher.publish(`log:${logId}`, message);
+// };
 
-//  Define __dirname manually for ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const s3 = new AWS.S3({
+//   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+//   region: "ap-south-1",
+//   httpOptions: {
+//     timeout: 10000,
+//     connectTimeout: 3000,
+//   },
+//   maxRetries: 1,
+// });
 
-// NEW: Cache logInstances with name list in Redis
-/**
- * Saves all structured log data to Redis cache to send the logInstances to the user for them to select the log which needs to be uplaoded to db
- * @param {String} userId - User ID
- * @param {String} logId - Unique log ID
- * @param {Object} fightsData - Structured fights object
- */
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
-async function cacheInstancePointersToRedis(logId, logInstances) {
-  try {
-    const instanceNames = logInstances.map((i) => i.name);
+// async function cacheInstancePointersToRedis(logId, logInstances) {
+//   try {
+//     const instanceNames = logInstances.map((i) => i.name);
 
-    const cacheDir = path.join(
-      __dirname,
-      "..",
-      "tmp",
-      "cached-instances",
-      `log-${logId}`
-    );
-    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+//     const cacheDir = path.join(
+//       __dirname,
+//       "..",
+//       "tmp",
+//       "cached-instances",
+//       `log-${logId}`
+//     );
+//     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
-    const instancePaths = [];
+//     const instancePaths = [];
 
-    for (let i = 0; i < logInstances.length; i++) {
-      const instance = logInstances[i];
-      if (!instance.encounterStartTime) {
-        console.warn(
-          "⚠️ Encounter start time missing for instance:",
-          instance.name
-        );
-      }
-      const filePath = path.join(cacheDir, `instance-${i}.json`);
-      fs.writeFileSync(filePath, JSON.stringify(instance));
-      instancePaths.push(filePath);
+//     // 🔁 Convert writeFileSync to parallel async writes
+//     const writePromises = logInstances.map((instance, i) => {
+//       const filePath = path.join(cacheDir, `instance-${i}.json`);
+//       instancePaths.push(filePath);
+//       return fs.promises.writeFile(filePath, JSON.stringify(instance, null, 2));
+//     });
 
-      console.log("🧪 Instance written:", {
-        name: instance.name,
-        encounterStartTime: instance.encounterStartTime,
-        keys: Object.keys(instance),
-      });
-    }
+//     await Promise.all(writePromises); // ✅ Wait for all writes in parallel
 
-    const redisKey = `log:${logId}:instances`;
-    await redisConnection.setex(
-      redisKey,
-      900,
-      JSON.stringify({ instanceNames, instancePaths })
-    );
+//     await redisConnection.setex(
+//       `log:${logId}:instances`,
+//       900,
+//       JSON.stringify({ instanceNames, instancePaths })
+//     );
 
-    await prisma.logs.update({
-      where: { logId },
-      data: {
-        processingStatus: "awaiting_user_choice",
-        processedAt: new Date(),
-      },
-    });
+//     await prisma.logs.update({
+//       where: { logId },
+//       data: {
+//         processingStatus: "awaiting_user_choice",
+//         processedAt: new Date(),
+//       },
+//     });
 
-    await redisPublisher.publish(
-      `log:${logId}`,
-      JSON.stringify({
-        stage: "awaiting_selection",
-        progress: 100,
-        instanceNames,
-      })
-    );
+//     await redisPublisher.publish(
+//       `log:${logId}`,
+//       JSON.stringify({
+//         stage: "awaiting_selection",
+//         progress: 100,
+//         instanceNames,
+//       })
+//     );
 
-    console.log(`📦 Stored ${logInstances.length} instance pointers in Redis`);
-  } catch (err) {
-    console.error("❌ Failed to cache instance pointers:", err.message);
-  }
-}
+//     console.log(`📦 Stored ${logInstances.length} instance pointers in Redis`);
+//   } catch (err) {
+//     console.error("❌ Failed to cache instance pointers:", err.message);
+//   }
+// }
 
-const logWorker = new Worker(
-  "log-processing-queue",
-  async (job) => {
-    try {
-      const { logId, s3FilePath } = job.data;
-      console.log(` Processing log (ID: ${logId})...`);
+// const logWorker = new Worker(
+//   "log-processing-queue",
+//   async (job) => {
+//     try {
+//       const { logId, s3FilePath } = job.data;
+//       console.log(` Processing log (ID: ${logId})...`);
+//       process.env.WORKER = "true";
 
-      process.env.WORKER = "true";
-      publishProgress(logId, "fetching", 10);
-      console.log(` Fetching file from S3: ${s3FilePath}`);
-      const userId = "12345";
+//       publishProgress(logId, "fetching", 10);
+//       const urlObj = new URL(s3FilePath);
+//       const s3ObjectKey = urlObj.pathname.substring(1);
 
-      const urlObj = new URL(s3FilePath);
-      const s3ObjectKey = urlObj.pathname.substring(1);
+//       console.log(` Extracted S3 Object Key: ${s3ObjectKey}`);
+//       console.log("📦 Downloading from S3...");
+//       console.time("S3 Download");
 
-      //  Fetch the log file from S3
-      //   const s3ObjectKey = s3FilePath.split(".com/")[1]; // Extract object key
-      console.log(` Extracted S3 Object Key: ${s3ObjectKey}`);
-      const zipFile = await s3
-        .getObject({ Bucket: process.env.AWS_BUCKET_NAME, Key: s3ObjectKey })
-        .promise();
+//       const tempDir = path.join(__dirname, "..", "tmp");
+//       if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
-      if (!zipFile.Body) {
-        throw new Error("Log file is empty or inaccessible");
-      }
+//       const tempZipPath = path.join(tempDir, `log-${logId}.zip`);
+//       const writeStream = fs.createWriteStream(tempZipPath);
 
-      publishProgress(logId, "unzip", 20);
+//       await new Promise((resolve, reject) => {
+//         s3.getObject({ Bucket: process.env.AWS_BUCKET_NAME, Key: s3ObjectKey })
+//           .createReadStream()
+//           .on("error", (err) => reject(err))
+//           .on("end", () => resolve())
+//           .pipe(writeStream);
+//       });
 
-      console.log(` Successfully fetched file from S3`);
+//       console.timeEnd("S3 Download");
+//       console.log(`📦 Downloaded and saved to disk at: ${tempZipPath}`);
 
-      //  Ensure the /tmp/ directory exists (Cross-platform fix)
-      const tempDir = path.join(__dirname, "..", "tmp"); // Windows & Linux compatible
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
+//       publishProgress(logId, "unzip", 50);
+//       const extractPath = path.join(tempDir, `log-${logId}`);
+//       if (!fs.existsSync(extractPath)) fs.mkdirSync(extractPath);
 
-      //  Write file to tmp directory
-      const tempZipPath = path.join(tempDir, `log-${logId}.zip`);
-      fs.writeFileSync(tempZipPath, zipFile.Body);
+//       const zip = new AdmZip(tempZipPath);
+//       zip.extractAllTo(extractPath, true);
 
-      publishProgress(logId, "unzip", 50);
-      console.log(` .zip file saved locally: ${tempZipPath}`);
+//       publishProgress(logId, "unzip", 100);
+//       console.log(` Extracted files to: ${extractPath}`);
 
-      //  Extract .zip file
-      const extractPath = path.join(tempDir, `log-${logId}`);
-      if (!fs.existsSync(extractPath)) {
-        fs.mkdirSync(extractPath);
-      }
+//       const extractedFiles = fs.readdirSync(extractPath);
+//       console.log(` Found ${extractedFiles.length} log files in .zip`);
 
-      const zip = new AdmZip(tempZipPath);
-      zip.extractAllTo(extractPath, true);
+//       publishProgress(logId, "parsing", 10);
 
-      publishProgress(logId, "unzip", 100);
-      console.log(` Extracted files to: ${extractPath}`);
+//       for (const fileName of extractedFiles) {
+//         const filePath = path.join(extractPath, fileName);
+//         if (!fileName.endsWith(".txt")) {
+//           throw new Error(
+//             ` Invalid file detected: ${fileName}. Only .txt or .log files are allowed.`
+//           );
+//         }
 
-      //  Iterate over extracted files
-      const extractedFiles = fs.readdirSync(extractPath);
-      console.log(` Found ${extractedFiles.length} log files in .zip`);
+//         console.log(` Processing extracted file: ${fileName}`);
+//         console.time("generate attempt");
+//         publishProgress(logId, "parsing", 20);
 
-      publishProgress(logId, "parsing", 10);
+//         const attemptOutputPath = path.join(extractPath, `attempts.json`);
+//         const structuredLogInstances = await generateAttemptSegments(
+//           filePath,
+//           logId,
+//           attemptOutputPath
+//         );
+//         console.timeEnd("generate attempt");
+//         const petJob = await petQueue.add("parse-pets", { logId, filePath });
+//         publishProgress(logId, "segmentation", 30);
+//         console.log(`✅ Generated segmented attempts for ${logId}`);
+//         console.time("damage heal parser");
+//         const damageHealJob = await damageHealQueue.add("parse-damage-heal", {
+//           logId,
+//           attemptsPath: attemptOutputPath,
+//         });
 
-      for (const fileName of extractedFiles) {
-        const filePath = path.join(extractPath, fileName);
+//         await damageHealJob.waitUntilFinished(damageHealQueueEvents);
+//         console.timeEnd("damage heal parser");
+//         publishProgress(logId, "parsing", 50);
+//         console.log(`✅ Log parsing completed for log ID: ${logId}`);
+//         console.time("redis pointer caching");
+//         if (structuredLogInstances && Array.isArray(structuredLogInstances)) {
+//           console.log(`🔹 Caching structured fights (multiple instances)...`);
+//           await petJob.waitUntilFinished(petQueueEvents);
+//           await cacheInstancePointersToRedis(logId, structuredLogInstances);
+//         }
+//         console.timeEnd("redis pointer caching");
+//       }
 
-        //  Ensure it's a text file before processing
-        if (fileName.endsWith(".txt")) {
-          console.log(` Processing extracted file: ${fileName}`);
+//       publishProgress(logId, "completed", 100);
+//       console.log(` Processing completed for log ID: ${logId}`);
 
-          //  Parse the log file and structure encounters
-          // const structuredFights = await processLogFile(filePath, logId);
+//       // fs.unlinkSync(tempZipPath);
+//       // fs.rmSync(path.join(tempDir, `log-${logId}`), {
+//       //   recursive: true,
+//       //   force: true,
+//       // });
+//       console.log(` Cleaned up temp files.`);
+//     } catch (error) {
+//       console.error(" Error processing log:", error);
+//       fs.writeFileSync(
+//         `/tmp/log-${logId}-error.json`,
+//         JSON.stringify({ error: err.message })
+//       );
 
-          // io.emit(`log:${logId}`, { stage: "parsing", progress: 50 });
-          publishProgress(logId, "parsing", 20);
+//       await prisma.logs.update({
+//         where: { logId: job.data.logId },
+//         data: { processingStatus: "failed" },
+//       });
 
-          console.log(` Log parsing completed for log ID: ${logId}`);
+//       publishProgress(job.data.logId, "error", error.message);
+//     }
+//   },
+//   { connection: redisConnection }
+// );
 
-          // 1. Generate segmented attempts and save as JSON
-          const attemptOutputPath = path.join(extractPath, `attempts.json`);
-          // await generateAttemptSegments(filePath, logId, attemptOutputPath);
-          const structuredLogInstances = await generateAttemptSegments(
-            filePath,
-            logId,
-            attemptOutputPath
-          );
-          // console.log(structuredLogInstances);
+// console.log(" Log processing worker started...");
 
-          const petJob = await petQueue.add("parse-pets", {
-            logId,
-            filePath, // full path to .txt
-          });
-          publishProgress(logId, "segmentation", 30);
-          console.log(`✅ Generated segmented attempts for ${logId}`);
-
-          const damageHealJob = await damageHealQueue.add("parse-damage-heal", {
-            logId,
-            attemptsPath: attemptOutputPath,
-          });
-
-          await damageHealJob.waitUntilFinished(damageHealQueueEvents);
-          publishProgress(logId, "parsing", 50);
-          console.log(`✅ Log parsing completed for log ID: ${logId}`);
-
-          // sending cached instances from redis to user for user selection
-          if (structuredLogInstances && Array.isArray(structuredLogInstances)) {
-            console.log(`🔹 Caching structured fights (multiple instances)...`);
-            await petJob.waitUntilFinished(petQueueEvents);
-            await cacheInstancePointersToRedis(logId, structuredLogInstances);
-          }
-          // fs.unlinkSync(tempZipPath);
-        } else {
-          throw new Error(
-            ` Invalid file detected: ${fileName}. Only .txt or .log files are allowed.`
-          );
-        }
-      }
-
-      // io.emit(`log:${logId}`, { stage: "completed", progress: 100 });
-      publishProgress(logId, "completed", 100);
-      console.log(` Processing completed for log ID: ${logId}`);
-
-      //  Cleanup: Delete extracted files and zip
-      fs.unlinkSync(tempZipPath);
-      fs.rmSync(extractPath, { recursive: true, force: true });
-
-      console.log(` Cleaned up temp files.`);
-    } catch (error) {
-      console.error(" Error processing log:", error.message);
-
-      await prisma.logs.update({
-        where: { logId: job.data.logId },
-        data: { processingStatus: "failed" },
-      });
-
-      //Emit error event
-      publishProgress(job.data.logId, "error", error.message);
-    }
-  },
-  { connection: redisConnection }
-);
-
-console.log(" Log processing worker started...");
-
-export default logWorker;
+// export default logWorker;

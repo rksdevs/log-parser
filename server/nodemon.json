@@ -1,4 +1,9 @@
 {
-  "ignore": ["server/tmp/*", "server/logs/*"],
+  "ignore": [
+    "server/tmp/*",
+    "server/logs/*",
+    "server/tmp/cached-instances/*",
+    "server/tmp/*"
+  ],
   "ext": "js,json"
 }

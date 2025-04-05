@@ -85,214 +85,6 @@ export const fetchAllLogs = async (req, res) => {
   }
 };
 
-// export const fetchLogsFromDb = async (req, res) => {
-//   const { logId } = req.params;
-//   console.log(`Fetching log from DB: ${logId}`);
-
-//   try {
-//     const logEntry = await prisma.logsMain.findUnique({
-//       where: { logId: parseInt(logId) },
-//       include: {
-//         log: {
-//           include: {
-//             encounters: {
-//               include: {
-//                 bosses: {
-//                   include: {
-//                     attempts: {
-//                       include: {
-//                         AttemptParticipant: {
-//                           include: { player: true },
-//                         },
-//                         spellStats: true,
-//                       },
-//                     },
-//                   },
-//                 },
-//               },
-//             },
-//           },
-//         },
-//       },
-//     });
-
-//     if (!logEntry) {
-//       return res.status(404).json({ message: "Log not found in database" });
-//     }
-
-//     const logData = {};
-//     let totalEncounters = 0;
-//     let totalAttempts = 0;
-//     const playerSet = new Set();
-//     const encounterWiseAttempts = {};
-
-//     let totalPlayerDamage = 0;
-//     let totalPlayerHealing = 0;
-//     let highestDps = { value: 0, playerName: "", bossName: "" };
-//     let highestHps = { value: 0, playerName: "", bossName: "" };
-//     let earliestStart = null;
-//     let latestEnd = null;
-
-//     const playerBreakdown = {};
-
-//     const isPlayer = (guid) => guid?.startsWith("0000000");
-
-//     for (const encounter of logEntry.log.encounters) {
-//       if (!logData[encounter.name]) {
-//         logData[encounter.name] = {};
-//       }
-//       totalEncounters++;
-
-//       for (const boss of encounter.bosses) {
-//         if (!logData[encounter.name][boss.name]) {
-//           logData[encounter.name][boss.name] = [];
-//         }
-
-//         for (const attempt of boss.attempts) {
-//           totalAttempts++;
-//           encounterWiseAttempts[encounter.name] =
-//             (encounterWiseAttempts[encounter.name] || 0) + 1;
-
-//           const startTime = new Date(attempt.startTime);
-//           const endTime = new Date(attempt.endTime);
-//           const duration = (endTime - startTime) / 1000;
-
-//           logData[encounter.name][boss.name].push({
-//             startTime: attempt.startTime,
-//             endTime: attempt.endTime,
-//             players: attempt.AttemptParticipant.map((p) => p.player.name),
-//             spellStatistics: attempt.spellStats,
-//           });
-
-//           if (!earliestStart || startTime < earliestStart) {
-//             earliestStart = startTime;
-//           }
-//           if (!latestEnd || endTime > latestEnd) {
-//             latestEnd = endTime;
-//           }
-
-//           for (const participant of attempt.AttemptParticipant) {
-//             const guid = participant.player.guid || "";
-//             if (isPlayer(guid)) {
-//               const playerName = participant.player.name;
-//               playerSet.add(playerName);
-
-//               const dps = duration ? participant.damageDone / duration : 0;
-//               const hps = duration ? participant.healingDone / duration : 0;
-
-//               totalPlayerDamage += participant.damageDone;
-//               totalPlayerHealing += participant.healingDone;
-
-//               playerBreakdown[playerName] = playerBreakdown[playerName] || {
-//                 totalDamage: 0,
-//                 totalHealing: 0,
-//               };
-//               playerBreakdown[playerName].totalDamage += participant.damageDone;
-//               playerBreakdown[playerName].totalHealing +=
-//                 participant.healingDone;
-
-//               if (dps > highestDps.value) {
-//                 highestDps = {
-//                   value: dps,
-//                   playerName,
-//                   bossName: boss.name,
-//                 };
-//               }
-//               if (hps > highestHps.value) {
-//                 highestHps = {
-//                   value: hps,
-//                   playerName,
-//                   bossName: boss.name,
-//                 };
-//               }
-//             }
-//           }
-//         }
-//       }
-//     }
-
-//     const sortedPlayers = Object.entries(playerBreakdown).sort(
-//       (a, b) => b[1].totalDamage - a[1].totalDamage
-//     );
-
-//     const top3Dps = sortedPlayers.slice(0, 3).map(([player, stats]) => ({
-//       player,
-//       value: Number(((stats.totalDamage / totalPlayerDamage) * 100).toFixed(2)),
-//     }));
-
-//     const othersDpsValue = sortedPlayers
-//       .slice(3)
-//       .reduce((sum, [, stats]) => sum + stats.totalDamage, 0);
-
-//     const othersPercent = Number(
-//       ((othersDpsValue / totalPlayerDamage) * 100).toFixed(2)
-//     );
-
-//     const dpsChartData = [
-//       ...top3Dps,
-//       { player: "Others", value: othersPercent },
-//     ];
-
-//     const navigationData = Object.entries(logData).map(
-//       ([encounterName, bosses]) => ({
-//         encounter: encounterName,
-//         url: `/logs/${logId}/${encodeURIComponent(encounterName)}`,
-//         isActive: true,
-//         bosses: Object.entries(bosses).map(([bossName, attempts]) => ({
-//           name: `${bossName} - Heroic`,
-//           attempts: attempts.map((attempt, index) => ({
-//             name: `Attempt ${index + 1} - ${attempt.startTime
-//               .toISOString()
-//               .replace("T", " ")}`,
-//             start: formatTimestamp(attempt.startTime),
-//             end: formatTimestamp(attempt.endTime),
-//             url: `/${logId}/${encodeURIComponent(
-//               encounterName
-//             )}/${formatTimestamp(attempt.startTime)}`,
-//           })),
-//         })),
-//       })
-//     );
-
-//     const totalDuration =
-//       earliestStart && latestEnd ? (latestEnd - earliestStart) / 1000 : 0;
-
-//     const logSummary = {
-//       logId,
-//       totalEncounters,
-//       totalAttempts,
-//       totalPlayers: playerSet.size,
-//       encounterWiseAttempts,
-//       totalPlayerDamage,
-//       totalPlayerHealing,
-//       playerBreakdown,
-//       dpsChartData,
-//       highestDps: {
-//         player: highestDps.playerName,
-//         dps: highestDps.value.toFixed(2),
-//         boss: highestDps.bossName,
-//       },
-//       highestHps: {
-//         player: highestHps.playerName,
-//         hps: highestHps.value.toFixed(2),
-//         boss: highestHps.bossName,
-//       },
-//       totalDuration: Number(totalDuration.toFixed(2)),
-//     };
-
-//     return res.status(200).json({
-//       logData,
-//       navigationData,
-//       logSummary,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching log from DB:", error);
-//     return res
-//       .status(500)
-//       .json({ message: "Something went wrong with fetch logs" });
-//   }
-// };
-
 export const fetchLogsFromDb = async (req, res) => {
   const { logId } = req.params;
   console.log(`Fetching log from DB: ${logId}`);
@@ -371,6 +163,8 @@ export const fetchLogsFromDb = async (req, res) => {
           const duration = (endTime - startTime) / 1000;
 
           logData[encounter.name][boss.name].push({
+            name: attempt.name,
+            type: attempt.type,
             startTime: attempt.startTime,
             endTime: attempt.endTime,
             players: attempt.AttemptParticipant.map((p) => p.player.name),
@@ -492,9 +286,8 @@ export const fetchLogsFromDb = async (req, res) => {
         bosses: Object.entries(bosses).map(([bossName, attempts]) => ({
           name: `${bossName} - Heroic`,
           attempts: attempts.map((attempt, index) => ({
-            name: `Attempt ${index + 1} - ${attempt.startTime
-              .toISOString()
-              .replace("T", " ")}`,
+            name: attempt.name || `Attempt ${index + 1}`,
+            type: attempt.type || "unknown",
             start: formatTimestamp(attempt.startTime),
             end: formatTimestamp(attempt.endTime),
             url: `/${logId}/${encodeURIComponent(

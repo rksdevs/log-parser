@@ -25,23 +25,46 @@ function extractBossID(guid) {
  * @param {string} guid - Full GUID from logs.
  * @returns {string|null} - Boss name if found, otherwise null.
  */
+// function getBossName(guid) {
+//   if (!guid) {
+//     return null;
+//   }
+
+//   const bossID = extractBossID(guid);
+//   if (!bossID) {
+//     return null;
+//   }
+
+//   const boss = bossesData.BOSSES_GUIDS[bossID] || null;
+
+//   if (!boss) {
+//     return null; //  Ensure non-boss encounters are ignored
+//   }
+
+//   return boss;
+// }
+
 function getBossName(guid) {
-  if (!guid) {
-    return null;
-  }
+  if (!guid) return null;
 
   const bossID = extractBossID(guid);
-  if (!bossID) {
-    return null;
+  if (!bossID) return null;
+
+  if (bossesData.BOSSES_GUIDS[bossID]) {
+    return bossesData.BOSSES_GUIDS[bossID];
   }
 
-  const boss = bossesData.BOSSES_GUIDS[bossID] || null;
-
-  if (!boss) {
-    return null; //  Ensure non-boss encounters are ignored
+  for (const [encounter, entries] of Object.entries(bossesData.MULTIPLEBOSS)) {
+    if (entries.includes(bossID)) {
+      return encounter; // return "Faction Champions", etc.
+    }
   }
 
-  return boss;
+  if (bossesData.TOC_CHAMPIONS?.[bossID]) {
+    return "Faction Champions";
+  }
+
+  return null;
 }
 
 /**

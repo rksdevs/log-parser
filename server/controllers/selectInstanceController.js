@@ -42,25 +42,9 @@ export const selectLogInstance = async (req, res) => {
       return res.status(404).json({ error: "Log instance file not found" });
     }
 
-    // if (selectedIndex < 0 || selectedIndex > instances.length) {
-    //   return res
-    //     .status(400)
-    //     .json({ error: "Invalid selection: incorrect index selected" });
-    // }
-
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const selectedInstance = JSON.parse(fileContent);
     const encounterStartTime = selectedInstance.encounterStartTime;
-    // console.log(
-    //   { name: selectedInstance.name, encounterStartTime },
-    //   "✅ selected instance ...."
-    // );
-
-    // const selectedInstance = instances[selectedIndex];
-    // console.log(
-    //   "✅ Queuing selected instance with structure:",
-    //   Object.keys(selectedInstance.fights)
-    // );
 
     const parsedPath = path.join(
       __dirname,
@@ -79,13 +63,8 @@ export const selectLogInstance = async (req, res) => {
       (inst) => inst.encounterStartTime === encounterStartTime
     );
 
-    const parsedInstanceStartTimes = parsedInstances.map(
-      (inst) => inst.encounterStartTime
-    );
-
-    // console.log(
-    //   "✅Parsed instance start time from the parsed data set",
-    //   parsedInstanceStartTimes
+    // const parsedInstanceStartTimes = parsedInstances.map(
+    //   (inst) => inst.encounterStartTime
     // );
 
     if (!enrichedInstance) {
@@ -93,11 +72,6 @@ export const selectLogInstance = async (req, res) => {
         error: "Structured instance not found for selected encounterStartTime",
       });
     }
-
-    // console.log(
-    //   "✅ Queuing enriched instance with structure:",
-    //   enrichedInstance
-    // );
 
     await mergeQueue.add("merge-worker", {
       logId: parseInt(logId),
@@ -122,6 +96,81 @@ export const selectLogInstance = async (req, res) => {
     });
   } catch (error) {
     console.error("Error selecting log instance:", error);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+// 👇 NEW FUNCTION for raw instance selection (before parsing)
+export const selectRawLogInstance = async (req, res) => {
+  const { logId } = req.params;
+  const { selectedIndex } = req.body;
+
+  try {
+    if (selectedIndex === undefined) {
+      return res
+        .status(400)
+        .json({ error: "Need selected log instance index" });
+    }
+
+    const redisKey = `log:${logId}:instances`;
+    const redisData = await redisConnection.get(redisKey);
+
+    if (!redisData) {
+      return res.status(404).json({
+        error:
+          "Selected instance not found: cache expired, try uploading new log again!",
+      });
+    }
+
+    const { instancePaths } = JSON.parse(redisData);
+    const selectedPath = instancePaths[selectedIndex];
+
+    if (!fs.existsSync(selectedPath)) {
+      return res.status(404).json({ error: "Log instance file not found" });
+    }
+
+    const instanceMeta = JSON.parse(fs.readFileSync(selectedPath, "utf-8"));
+    const rawTxtPath = path.join(
+      __dirname,
+      "../tmp",
+      `log-${logId}`,
+      "WoWCombatLog.txt"
+    );
+
+    if (!fs.existsSync(rawTxtPath)) {
+      return res.status(404).json({ error: "Raw .txt log file not found" });
+    }
+
+    // Slice selected log range
+    const rawLines = fs.readFileSync(rawTxtPath, "utf-8").split("\n");
+    const selectedLines = rawLines.slice(
+      instanceMeta.lineStart,
+      instanceMeta.lineEnd + 1
+    );
+
+    const instanceFilePath = path.join(
+      __dirname,
+      "../logs/json",
+      `log-${logId}-instance.txt`
+    );
+    fs.writeFileSync(instanceFilePath, selectedLines.join("\n"));
+
+    // Trigger workers like generateAttemptSegments or damageHealQueue here
+    await damageHealQueue.add("parse-damage-heal", {
+      logId,
+      attemptsPath: instanceFilePath, // or pass it to generateAttemptSegments
+    });
+
+    await prisma.logs.update({
+      where: { logId: parseInt(logId) },
+      data: { processingStatus: "queued_for_parsing" },
+    });
+
+    return res.status(200).json({
+      message: "Selected instance sliced and parsing queued",
+    });
+  } catch (err) {
+    console.error("Error selecting raw log instance:", err);
     return res.status(500).json({ error: "Server error" });
   }
 };

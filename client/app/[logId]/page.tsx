@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useNavigation } from "@/context/NavigationContext";
 import LogSummaryCards from "@/components/log-summary-cards";
 import LogDashboardTableSection from "@/components/log-dashboard-table-section";
+import { DamageTimelineChart } from "@/components/full-timeline-chart";
 
 const Log = () => {
   const params = useParams();
@@ -38,6 +39,7 @@ const Log = () => {
       <LogSummaryCards />
       <div className="px-4 lg:px-6">{/* <ChartAreaInteractive /> */}</div>
       {/* <DataTable data={data} /> */}
+      <DamageTimelineChart />
       <LogDashboardTableSection />
     </div>
   );

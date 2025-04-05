@@ -2,13 +2,13 @@ import fs from "fs";
 import path from "path";
 import readline from "readline";
 import { fileURLToPath } from "url";
-import { splitToAttempts } from "../helpers/fightSep.js";
+import { splitToAttempts } from "../helpers/newFightSep.js";
 import { getBossName, getMultiBossName } from "../helpers/bossHelper.js";
+import Redis from "ioredis";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const INSTANCE_GAP_MS = 3 * 60 * 60 * 1000; // 3 hours
-const MAX_GAP = 30000;
+const INSTANCE_GAP_MS = 3 * 60 * 60 * 1000;
 
 function parseTimestampToMs(timestamp) {
   try {
@@ -21,8 +21,19 @@ function parseTimestampToMs(timestamp) {
   }
 }
 
+const redisPublisher = new Redis(
+  process.env.REDIS_URL || "redis://localhost:6379"
+);
+
+const publishProgress = async (logId, stage, progress) => {
+  const message = JSON.stringify({ stage, progress });
+  console.log(`Damage worker log:${logId} - ${stage}, ${progress}`);
+  await redisPublisher.publish(`log:${logId}`, message);
+};
+
 export async function generateAttemptSegments(filePath, logId, outputPath) {
   console.time("attempt segregation");
+  publishProgress(logId, "Gathering attempt data", 25);
   const rl = readline.createInterface({
     input: fs.createReadStream(filePath),
     crlfDelay: Infinity,
@@ -33,8 +44,11 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
     name: null,
     encounterStartTime: null,
     rawBossLogs: {},
+    allLogs: [],
   };
+
   let lastTimestamp = null;
+  let lineCounter = 0;
 
   for await (let line of rl) {
     if (!line?.trim()) continue;
@@ -44,9 +58,18 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
     const timestamp = line.substring(0, secondSpace);
     const timestampMs = parseTimestampToMs(timestamp);
 
+    currentInstance.allLogs.push({
+      line,
+      timestampMs,
+      lineNumber: lineCounter,
+    });
+
     const eventData = line.substring(secondSpace + 1);
     const parts = eventData.split(",");
-    if (parts.length < 5) continue;
+    if (parts.length < 5) {
+      lineCounter++;
+      continue;
+    }
 
     const sourceGUID = parts[1]?.replace("0x", "");
     const targetGUID = parts[4]?.replace("0x", "");
@@ -59,9 +82,11 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
       line += " ##MULTIBOSS##";
     }
 
-    if (!bossName) continue; //skips if the target or source is not a boss
+    if (!bossName) {
+      lineCounter++;
+      continue;
+    }
 
-    // Split log instance by 3 hours gap
     if (
       lastTimestamp !== null &&
       timestampMs - lastTimestamp > INSTANCE_GAP_MS
@@ -77,10 +102,10 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
           .slice(0, 19)
           .replace("T", " "),
         rawBossLogs: {},
+        allLogs: [],
       };
     }
 
-    // First boss hit for this instance
     if (!currentInstance.name) {
       currentInstance.name = timestamp;
       currentInstance.encounterStartTime = new Date(timestampMs)
@@ -89,32 +114,23 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
         .replace("T", " ");
     }
 
-    // Add log to boss group
     if (!currentInstance.rawBossLogs[bossName]) {
       currentInstance.rawBossLogs[bossName] = [];
     }
     currentInstance.rawBossLogs[bossName].push(line);
     lastTimestamp = timestampMs;
+    lineCounter++;
   }
 
-  // Push last instance
   if (Object.keys(currentInstance.rawBossLogs).length > 0) {
-    if (!currentInstance.encounterStartTime) {
-      currentInstance.encounterStartTime = new Date()
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " ");
-    }
     logInstances.push({ ...currentInstance });
   }
 
-  // Build structured output
   const structured = logInstances.map((instance) => {
-    const { rawBossLogs, name, encounterStartTime } = instance;
+    const { rawBossLogs, name, encounterStartTime, allLogs } = instance;
     const dummyStats = {};
     const dummyGuids = {};
     const dummyPets = {};
-
     const bossGrouped = {};
 
     for (const bossName in rawBossLogs) {
@@ -134,16 +150,26 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
           const end = new Date(attempt.endTime);
           return (end - start) / 1000 > 30;
         })
-        .map((attempt) => ({
-          boss: attempt.boss,
-          startTime: attempt.startTime,
-          endTime: attempt.endTime,
-          logs: attempt.logs
-            .map((log) => (typeof log === "string" ? log : log.raw))
-            .filter(Boolean),
-        }));
+        .map((attempt) => {
+          const relevantLines = allLogs.filter(
+            (lineObj) =>
+              lineObj.timestampMs >= attempt.startMs &&
+              lineObj.timestampMs <= attempt.endMs
+          );
 
-      // Nest like: fights → EncounterName → BossName → [attempts]
+          return {
+            boss: attempt.boss,
+            name: `${attempt.boss} (${attempt.type})`,
+            type: attempt.type,
+            startTime: attempt.startTime,
+            endTime: attempt.endTime,
+            startMs: attempt.startMs,
+            endMs: attempt.endMs,
+            lineStart: relevantLines[0]?.lineNumber || 0,
+            lineEnd: relevantLines[relevantLines.length - 1]?.lineNumber || 0,
+          };
+        });
+
       if (!bossGrouped[bossName]) bossGrouped[bossName] = {};
       bossGrouped[bossName][bossName] = cleanedAttempts;
     }
@@ -155,7 +181,6 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
     };
   });
 
-  // Save result
   const outputDir = path.join(__dirname, "../logs/segments");
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
@@ -170,6 +195,4 @@ export async function generateAttemptSegments(filePath, logId, outputPath) {
   return structured;
 }
 
-// generateAttemptSegments("../server/tmp/log-303/WoWCombatLog.txt", 218);
-
-// generateAttemptSegments("../server/logs/json/Sample-togc-10-inno.txt", 155);
+// generateAttemptSegments("../server/tmp/log-303/WoWCombatLog.txt", 301);

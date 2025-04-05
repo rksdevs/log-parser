@@ -4,159 +4,6 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-// generator client {
-//   provider = "prisma-client-js"
-// }
-
-// datasource db {
-//   provider = "postgresql"
-//   url      = env("DATABASE_URL")
-// }
-
-// enum UploadStatus {
-//   pending
-//   completed
-//   failed
-// }
-
-// enum ProcessingStatus {
-//   pending
-//   completed
-//   failed
-//   awaiting_user_choice
-//   queued_for_db
-// }
-
-// model Logs {
-//   logId              Int              @id @default(autoincrement())
-//   fileName           String
-//   s3FilePath         String
-//   serverName         String
-//   uploadTimestamp    DateTime         @default(now())
-//   fileSize           Int
-//   fileType           String
-//   uploadStatus       UploadStatus
-//   processingStatus   ProcessingStatus
-//   structuredDataPath String?
-//   processedAt        DateTime?
-//   dbUploadCompleteAt DateTime?
-//   // New relationship to encounters
-//   encounters         Encounter[]
-//   LogsMain           LogsMain?
-//   Pet                Pet[]
-// }
-
-// // New Tables for Storing Structured Data
-
-// model Encounter {
-//   id        String   @id
-//   log       Logs     @relation(fields: [logId], references: [logId])
-//   logId     Int
-//   name      String
-//   bosses    Boss[]
-//   createdAt DateTime @default(now())
-// }
-
-// model Boss {
-//   id          String    @id
-//   name        String
-//   encounter   Encounter @relation(fields: [encounterId], references: [id])
-//   encounterId String
-//   attempts    Attempt[]
-// }
-
-// model Attempt {
-//   id           String               @id
-//   boss         Boss                 @relation(fields: [bossId], references: [id])
-//   bossId       String
-//   startTime    DateTime
-//   endTime      DateTime
-//   totalDamage  Int
-//   totalHealing Int
-//   players      AttemptParticipant[]
-//   logs         Log[]
-//   spellStats   SpellStatistic[]
-// }
-
-// model Player {
-//   id             Int                  @id @default(autoincrement())
-//   name           String
-//   class          String?
-//   attempts       AttemptParticipant[]
-//   SpellStatistic SpellStatistic[]
-// }
-
-// model AttemptParticipant {
-//   id          Int     @id @default(autoincrement())
-//   attempt     Attempt @relation(fields: [attemptId], references: [id])
-//   attemptId   String
-//   player      Player  @relation(fields: [playerId], references: [id])
-//   playerId    Int
-//   damageDone  Int     @default(0)
-//   healingDone Int     @default(0)
-// }
-
-// model Log {
-//   id         Int      @id @default(autoincrement())
-//   attempt    Attempt  @relation(fields: [attemptId], references: [id])
-//   attemptId  String
-//   timestamp  DateTime
-//   eventType  String
-//   sourceGUID String?
-//   targetGUID String?
-//   spellId    Int?
-//   spellName  String?
-// }
-
-// model SpellStatistic {
-//   id            Int     @id @default(autoincrement())
-//   attempt       Attempt @relation(fields: [attemptId], references: [id])
-//   attemptId     String
-//   player        Player  @relation(fields: [playerId], references: [id])
-//   playerId      Int
-//   playerName    String
-//   spellId       String
-//   spellName     String
-//   totalDamage   Int     @default(0)
-//   totalCasts    Int     @default(0)
-//   normalHits    Int     @default(0)
-//   criticalHits  Int     @default(0)
-//   periodicHits  Int     @default(0)
-//   periodicCrits Int     @default(0)
-//   usefulDamage  Int     @default(0)
-//   icon          String
-// }
-
-// model LogsMain {
-//   id              Int      @id @default(autoincrement())
-//   logId           Int      @unique
-//   firstEncounter  DateTime
-//   playersInvolved String
-//   uploadStatus    String   @default("processing")
-//   createdAt       DateTime @default(now())
-
-//   // ✅ Ensure the referenced field matches exactly
-//   log  Logs  @relation(fields: [logId], references: [logId], onDelete: Cascade)
-//   pets Pet[]
-// }
-
-// model Pet {
-//   id        String @id @default(cuid())
-//   logId     Int
-//   petGUID   String // Pet's GUID (e.g. F140...)
-//   petName   String
-//   ownerGUID String // Player's GUID
-//   ownerName String
-
-//   logMain   LogsMain @relation(fields: [logId], references: [logId], onDelete: Cascade)
-//   Logs      Logs?    @relation(fields: [logsLogId], references: [logId])
-//   logsLogId Int?
-
-//   @@index([logId])
-//   @@index([petGUID])
-//   @@index([ownerGUID])
-// }
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -178,6 +25,11 @@ enum ProcessingStatus {
   failed
   awaiting_user_choice
   queued_for_db
+}
+
+enum AttemptType {
+  kill
+  wipe
 }
 
 model Logs {
@@ -215,12 +67,57 @@ model Boss {
   attempts    Attempt[]
 }
 
+// model Attempt {
+//   id                 String               @id
+//   boss               Boss                 @relation(fields: [bossId], references: [id])
+//   bossId             String
+//   startTime          DateTime
+//   endTime            DateTime
+//   overallDamage      Int
+//   overallHealing     Int
+//   damageByActors     Json
+//   healingByActors    Json
+//   allActors          AllActor[]
+//   logs               Log[]
+//   spellStats         SpellStatistic[]
+//   AttemptParticipant AttemptParticipant[]
+// }
+
+//name type addition
+// model Attempt {
+//   id                 String               @id
+//   boss               Boss                 @relation(fields: [bossId], references: [id])
+//   bossId             String
+//   name               String? // e.g. "Gormok (kill)"
+//   type               AttemptType? // New field: kill/wipe
+//   startTime          DateTime
+//   endTime            DateTime
+//   overallDamage      Int
+//   overallHealing     Int
+//   damageByActors     Json
+//   healingByActors    Json
+//   allActors          AllActor[]
+//   logs               Log[]
+//   spellStats         SpellStatistic[]
+//   AttemptParticipant AttemptParticipant[]
+// }
+
+//v3 - architechture change
 model Attempt {
-  id                 String               @id
-  boss               Boss                 @relation(fields: [bossId], references: [id])
-  bossId             String
-  startTime          DateTime
-  endTime            DateTime
+  id        String       @id
+  boss      Boss         @relation(fields: [bossId], references: [id])
+  bossId    String
+  name      String? // e.g. "Gormok (kill)"
+  type      AttemptType? // New field: kill/wipe
+  startTime DateTime
+  endTime   DateTime
+
+  // NEW FIELDS (safe + optional)
+  startMs   BigInt?
+  endMs     BigInt?
+  lineStart Int?
+  lineEnd   Int?
+
   overallDamage      Int
   overallHealing     Int
   damageByActors     Json

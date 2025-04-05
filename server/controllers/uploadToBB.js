@@ -78,7 +78,7 @@ async function getPresignedUrlS3(req, res) {
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: `uploads/${newFileName}`, // Path in S3
-      Expires: 60, // URL valid for 60 seconds
+      Expires: 300, // URL valid for 60 seconds
       ContentType: fileType,
     };
 

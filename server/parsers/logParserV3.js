@@ -6,10 +6,15 @@ import { getPlayerClassFromSpell } from "../helpers/playerClassHelper.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function processLogFile(attemptsFilePath, logId) {
+async function processLogFile(attemptsFilePath, logId, rawLogPath = null) {
   console.log(`📥 Reading segmented attempts from: ${attemptsFilePath}`);
-  console.time("damage/heal parsing from json");
+  console.time("✅ Damage/heal parsing function from json timer: ");
   const logInstances = JSON.parse(fs.readFileSync(attemptsFilePath, "utf8"));
+
+  const txtPath =
+    rawLogPath || path.join(__dirname, `../tmp/log-${logId}/WoWCombatLog.txt`);
+  const rawLines = fs.readFileSync(txtPath, "utf8").split("\n");
+
   const structuredFightsArray = [];
 
   for (const instance of logInstances) {
@@ -25,14 +30,16 @@ async function processLogFile(attemptsFilePath, logId) {
         if (!Array.isArray(attempts)) continue;
 
         for (const attempt of attempts) {
-          const rawLines = attempt.logs;
+          const { lineStart, lineEnd } = attempt;
+          const slicedLines = rawLines.slice(lineStart, lineEnd + 1);
+
           const allActors = {};
           const damageByActors = {};
           const healingByActors = {};
           let overallDamage = 0;
           let overallHealing = 0;
 
-          for (const line of rawLines) {
+          for (const line of slicedLines) {
             const firstSpace = line.indexOf(" ");
             const secondSpace = line.indexOf(" ", firstSpace + 1);
             const timestamp = line.substring(0, secondSpace);
@@ -138,7 +145,6 @@ async function processLogFile(attemptsFilePath, logId) {
           attempt.damageByActors = damageByActors;
           attempt.healingByActors = healingByActors;
           attempt.allActors = allActors;
-          delete attempt.logs;
         }
 
         structuredFights[encounterName][bossName] = attempts;
@@ -159,10 +165,11 @@ async function processLogFile(attemptsFilePath, logId) {
   fs.writeFileSync(outputPath, JSON.stringify(structuredFightsArray, null, 2));
 
   console.log(`✅ logParser complete. Saved to ${outputPath}`);
-  console.timeEnd("damage/heal parsing from json");
+  console.timeEnd("✅ Damage/heal parsing function from json timer: ");
+
   return structuredFightsArray;
 }
 
-processLogFile("../server/logs/segments/attempts-log-300.json", 400);
+// processLogFile("../server/logs/segments/attempts-log-301.json", 323);
 
 export { processLogFile };

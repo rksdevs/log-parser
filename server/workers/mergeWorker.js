@@ -3,9 +3,21 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { postgresQueue } from "../queues/postgresQueue.js";
+import { redisConnection } from "../config/redis.js";
+import Redis from "ioredis";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const redisPublisher = new Redis(
+  process.env.REDIS_URL || "redis://localhost:6379"
+);
+
+const publishProgress = async (logId, stage, progress) => {
+  const message = JSON.stringify({ stage, progress });
+  console.log(`Damage worker log:${logId} - ${stage}, ${progress}`);
+  await redisPublisher.publish(`log:${logId}`, message);
+};
 
 function mergePetsIntoActors(structuredFights, petInstance) {
   const petMetaMap = Object.values(petInstance.petsPerma); // [{ name, master_name }, ...]
@@ -24,11 +36,11 @@ function mergePetsIntoActors(structuredFights, petInstance) {
           const { name: petName, master_name: ownerName } = petMeta;
 
           if (!allActors[petName]) {
-            console.warn("⚠️ Pet missing from allActors:", petName);
+            // console.warn("⚠️ Pet missing from allActors:", petName);
             continue;
           }
           if (!allActors[ownerName]) {
-            console.warn("⚠️ Owner missing from allActors:", ownerName);
+            // console.warn("⚠️ Owner missing from allActors:", ownerName);
             continue;
           }
 
@@ -73,6 +85,11 @@ const mergeWorker = new Worker(
     );
 
     if (!match) {
+      publishProgress(
+        logId,
+        "error",
+        `Matching pet instance not found for encounterStartTime: ${selectedInstanceTime}`
+      );
       throw new Error(
         `Matching pet instance not found for encounterStartTime: ${selectedInstanceTime}`
       );
@@ -122,7 +139,7 @@ const mergeWorker = new Worker(
 
     return { message: "Merged and queued for DB insert", logId };
   },
-  { connection: { host: "localhost", port: 6379 } }
+  { connection: redisConnection }
 );
 
 mergeWorker.on("completed", (job) => {

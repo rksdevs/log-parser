@@ -1,136 +1,174 @@
+// import { Worker } from "bullmq";
 // import fs from "fs";
 // import readline from "readline";
 // import path from "path";
 // import { fileURLToPath } from "url";
 // import { resolvePetRelationsFromLogs } from "../helpers/petRelationResolver.js";
+// import { getBossName, getMultiBossName } from "../helpers/bossHelper.js";
+// import { redisConnection } from "../config/redis.js";
 
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
 
 // function parseTimestampToDate(logTimestamp) {
-//   // Example: "2/12 23:29:28.092"
 //   const [datePart, timePart] = logTimestamp.split(" ");
 //   const [month, day] = datePart.split("/").map(Number);
 //   const [hours, minutes, seconds] = timePart.split(":");
 //   const [sec, millis] = seconds.split(".");
-
-//   const now = new Date(); // For year
+//   const now = new Date();
 //   const year = now.getFullYear();
+//   return new Date(year, month - 1, day, +hours, +minutes, +sec, +millis);
+// }
 
-//   return new Date(
-//     year,
-//     month - 1,
-//     day,
-//     Number(hours),
-//     Number(minutes),
-//     Number(sec),
-//     Number(millis)
-//   );
+// function parseTimestampToMs(timestamp) {
+//   try {
+//     const [date, time] = timestamp.split(" ");
+//     const [month, day] = date.split("/").map(Number);
+//     const [hours, minutes, seconds] = time.split(":").map(Number);
+//     return new Date(2025, month - 1, day, hours, minutes, seconds).getTime();
+//   } catch (e) {
+//     return 0;
+//   }
 // }
 
 // function getEncounterStartTime(line) {
-//   // const [timestamp] = line.split(" ");
-//   // const parsed = parseTimestampToDate(timestamp);
 //   const parts = line.split(" ");
-//   const timestamp = parts[0] + " " + parts[1]; // "2/12 23:29:28.092"
+//   const timestamp = parts[0] + " " + parts[1];
 //   const parsed = parseTimestampToDate(timestamp);
-//   return parsed.toISOString().replace("T", " ").slice(0, 19); // "YYYY-MM-DD HH:mm:ss"
+//   return parsed.toISOString().replace("T", " ").slice(0, 19);
 // }
 
-// async function processPetLogInstancesFromTxt(filePath, logId) {
-//   const rl = readline.createInterface({
-//     input: fs.createReadStream(filePath),
-//     crlfDelay: Infinity,
-//   });
+// const petWorker = new Worker(
+//   "parse-pets",
+//   async (job) => {
+//     try {
+//       const { filePath, logId } = job.data;
 
-//   const logInstances = [];
-//   let currentInstance = [];
-//   let previousTime = null;
-
-//   for await (const line of rl) {
-//     if (!line?.trim()) continue;
-
-//     const timestampStr = line.split(" ")[0] + " " + line.split(" ")[1];
-//     const currentTime = parseTimestampToDate(timestampStr);
-
-//     if (
-//       previousTime &&
-//       (currentTime.getTime() - previousTime.getTime()) / (1000 * 60 * 60) >= 3
-//     ) {
-//       // 3 hour gap
-//       logInstances.push(currentInstance);
-//       currentInstance = [];
-//     }
-
-//     currentInstance.push(line);
-//     previousTime = currentTime;
-//   }
-
-//   if (currentInstance.length) logInstances.push(currentInstance);
-
-//   // Run pet resolver per instance
-//   const output = {
-//     logId,
-//     instances: [],
-//   };
-
-//   for (const lines of logInstances) {
-//     const rawLogLines = [];
-
-//     for (const line of lines) {
-//       const firstSpaceIndex = line.indexOf(" ");
-//       const secondSpaceIndex = line.indexOf(" ", firstSpaceIndex + 1);
-//       const timestamp = line.substring(0, secondSpaceIndex);
-//       const eventData = line.substring(secondSpaceIndex + 1);
-//       const parts = eventData.split(",");
-
-//       if (parts.length < 5) continue;
-
-//       const eventType = parts[0];
-//       const sourceGUID = parts[1]?.replace("0x", "");
-//       const sourceName = parts[2]?.replace(/"/g, "");
-//       const targetGUID = parts[4]?.replace("0x", "");
-//       const targetName = parts[5]?.replace(/"/g, "");
-//       const spellId = parts[7] || null;
-//       const spellName = parts[8]?.replace(/"/g, "") || null;
-
-//       rawLogLines.push({
-//         timestamp,
-//         eventType,
-//         sourceGUID,
-//         sourceName,
-//         targetGUID,
-//         targetName,
-//         spellId,
-//         spellName,
-//         raw: line,
+//       const rl = readline.createInterface({
+//         input: fs.createReadStream(filePath),
+//         crlfDelay: Infinity,
 //       });
+
+//       const logInstances = [];
+//       let currentInstance = [];
+//       let previousTime = null;
+
+//       for await (const line of rl) {
+//         if (!line?.trim()) continue;
+
+//         const timestampStr = line.split(" ")[0] + " " + line.split(" ")[1];
+//         const currentTime = parseTimestampToDate(timestampStr);
+
+//         if (
+//           previousTime &&
+//           (currentTime.getTime() - previousTime.getTime()) / (1000 * 60 * 60) >=
+//             3
+//         ) {
+//           logInstances.push(currentInstance);
+//           currentInstance = [];
+//         }
+
+//         currentInstance.push(line);
+//         previousTime = currentTime;
+//       }
+
+//       if (currentInstance.length) logInstances.push(currentInstance);
+
+//       const output = {
+//         logId,
+//         instances: [],
+//       };
+
+//       for (const lines of logInstances) {
+//         const rawLogLines = [];
+//         let bossStartTimestamp = null;
+//         for (const line of lines) {
+//           const firstSpaceIndex = line.indexOf(" ");
+//           const secondSpaceIndex = line.indexOf(" ", firstSpaceIndex + 1);
+//           const timestamp = line.substring(0, secondSpaceIndex);
+//           const eventData = line.substring(secondSpaceIndex + 1);
+//           const parts = eventData.split(",");
+
+//           if (parts.length < 5) continue;
+
+//           const eventType = parts[0];
+//           const sourceGUID = parts[1]?.replace("0x", "");
+//           const sourceName = parts[2]?.replace(/"/g, "");
+//           const targetGUID = parts[4]?.replace("0x", "");
+//           const targetName = parts[5]?.replace(/"/g, "");
+//           const spellId = parts[7] || null;
+//           const spellName = parts[8]?.replace(/"/g, "") || null;
+
+//           // Detect first boss
+//           const bossName =
+//             getBossName(targetGUID) ||
+//             getBossName(sourceGUID) ||
+//             getMultiBossName(targetGUID) ||
+//             getMultiBossName(sourceGUID);
+
+//           if (bossName && !bossStartTimestamp) {
+//             bossStartTimestamp = parseTimestampToMs(timestamp);
+//           }
+
+//           rawLogLines.push({
+//             timestamp,
+//             eventType,
+//             sourceGUID,
+//             sourceName,
+//             targetGUID,
+//             targetName,
+//             spellId,
+//             spellName,
+//             raw: line,
+//           });
+//         }
+
+//         const result = resolvePetRelationsFromLogs(rawLogLines);
+
+//         output.instances.push({
+//           encounterStartTime:
+//             new Date(bossStartTimestamp)
+//               .toISOString()
+//               .slice(0, 19)
+//               .replace("T", " ") || getEncounterStartTime(lines[0]),
+//           petOwners: result.petOwners,
+//           petsPerma: result.petsPerma,
+//           missingOwner: result.missingOwner,
+//           otherPermaPets: result.otherPermaPets,
+//         });
+//       }
+
+//       const outputDir = path.join(__dirname, "../logs/pets");
+//       if (!fs.existsSync(outputDir))
+//         fs.mkdirSync(outputDir, { recursive: true });
+
+//       const outputPath = path.join(outputDir, `pets-log-${logId}.json`);
+//       fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+
+//       console.log(`✅ Pets resolved and saved to ${outputPath}`);
+//       return output;
+//     } catch (err) {
+//       console.error("❌ PetWorker failed for logId", job.data.logId, err);
+//       throw err; // let BullMQ handle failure/retry
 //     }
-
-//     const result = resolvePetRelationsFromLogs(rawLogLines);
-
-//     output.instances.push({
-//       encounterStartTime: getEncounterStartTime(lines[0]),
-//       petOwners: result.petOwners,
-//       petsPerma: result.petsPerma,
-//       missingOwner: result.missingOwner,
-//       otherPermaPets: result.otherPermaPets,
-//     });
+//   },
+//   {
+//     connection: redisConnection,
+//     lockDuration: 300000, // 🔧 5 minutes lock (adjust as needed)
+//     stalledInterval: 60000, // check every 60s
+//     maxStalledCount: 2, // fail after 2 stalls, // adjust as needed
 //   }
+// );
 
-//   const outputDir = path.join(__dirname, "../logs/pets");
-//   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+// petWorker.on("completed", (job) =>
+//   console.log(`🎉 PetWorker completed for logId ${job.data.logId}`)
+// );
 
-//   const outputPath = path.join(outputDir, `pets-log-${logId}.json`);
-//   fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+// petWorker.on("failed", (job, err) =>
+//   console.error(`❌ PetWorker failed for logId ${job?.data?.logId}`, err)
+// );
 
-//   console.log(`✅ Pets resolved and saved to ${outputPath}`);
-//   return output;
-// }
-
-// // processPetLogInstancesFromTxt("../logs/json/2-togc-10-inno.txt", 204);
-
-// export { processPetLogInstancesFromTxt };
+// console.log("Pets worker started....");
 
 import { Worker } from "bullmq";
 import fs from "fs";
@@ -139,6 +177,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { resolvePetRelationsFromLogs } from "../helpers/petRelationResolver.js";
 import { getBossName, getMultiBossName } from "../helpers/bossHelper.js";
+import { redisConnection } from "../config/redis.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -148,8 +187,7 @@ function parseTimestampToDate(logTimestamp) {
   const [month, day] = datePart.split("/").map(Number);
   const [hours, minutes, seconds] = timePart.split(":");
   const [sec, millis] = seconds.split(".");
-  const now = new Date();
-  const year = now.getFullYear();
+  const year = new Date().getFullYear();
   return new Date(year, month - 1, day, +hours, +minutes, +sec, +millis);
 }
 
@@ -174,46 +212,21 @@ function getEncounterStartTime(line) {
 const petWorker = new Worker(
   "parse-pets",
   async (job) => {
-    const { filePath, logId } = job.data;
+    try {
+      const { filePath, logId } = job.data;
+      console.log("✅ Pets worker initiated....");
+      console.time("Pets worker timer");
+      const rl = readline.createInterface({
+        input: fs.createReadStream(filePath),
+        crlfDelay: Infinity,
+      });
 
-    const rl = readline.createInterface({
-      input: fs.createReadStream(filePath),
-      crlfDelay: Infinity,
-    });
-
-    const logInstances = [];
-    let currentInstance = [];
-    let previousTime = null;
-
-    for await (const line of rl) {
-      if (!line?.trim()) continue;
-
-      const timestampStr = line.split(" ")[0] + " " + line.split(" ")[1];
-      const currentTime = parseTimestampToDate(timestampStr);
-
-      if (
-        previousTime &&
-        (currentTime.getTime() - previousTime.getTime()) / (1000 * 60 * 60) >= 3
-      ) {
-        logInstances.push(currentInstance);
-        currentInstance = [];
-      }
-
-      currentInstance.push(line);
-      previousTime = currentTime;
-    }
-
-    if (currentInstance.length) logInstances.push(currentInstance);
-
-    const output = {
-      logId,
-      instances: [],
-    };
-
-    for (const lines of logInstances) {
       const rawLogLines = [];
       let bossStartTimestamp = null;
-      for (const line of lines) {
+
+      for await (const line of rl) {
+        if (!line?.trim()) continue;
+
         const firstSpaceIndex = line.indexOf(" ");
         const secondSpaceIndex = line.indexOf(" ", firstSpaceIndex + 1);
         const timestamp = line.substring(0, secondSpaceIndex);
@@ -230,7 +243,6 @@ const petWorker = new Worker(
         const spellId = parts[7] || null;
         const spellName = parts[8]?.replace(/"/g, "") || null;
 
-        // Detect first boss
         const bossName =
           getBossName(targetGUID) ||
           getBossName(sourceGUID) ||
@@ -256,30 +268,52 @@ const petWorker = new Worker(
 
       const result = resolvePetRelationsFromLogs(rawLogLines);
 
-      output.instances.push({
-        encounterStartTime:
-          new Date(bossStartTimestamp)
-            .toISOString()
-            .slice(0, 19)
-            .replace("T", " ") || getEncounterStartTime(lines[0]),
-        petOwners: result.petOwners,
-        petsPerma: result.petsPerma,
-        missingOwner: result.missingOwner,
-        otherPermaPets: result.otherPermaPets,
-      });
+      const output = {
+        logId,
+        instances: [
+          {
+            encounterStartTime:
+              new Date(bossStartTimestamp)
+                .toISOString()
+                .slice(0, 19)
+                .replace("T", " ") ||
+              getEncounterStartTime(rawLogLines[0]?.raw),
+            petOwners: result.petOwners,
+            petsPerma: result.petsPerma,
+            missingOwner: result.missingOwner,
+            otherPermaPets: result.otherPermaPets,
+          },
+        ],
+      };
+
+      const outputDir = path.join(__dirname, "../logs/pets");
+      if (!fs.existsSync(outputDir))
+        fs.mkdirSync(outputDir, { recursive: true });
+
+      const outputPath = path.join(outputDir, `pets-log-${logId}.json`);
+      fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+
+      console.log(
+        "Pet start time from pet worker: ",
+        new Date(bossStartTimestamp)
+          .toISOString()
+          .slice(0, 19)
+          .replace("T", " ") || getEncounterStartTime(rawLogLines[0]?.raw)
+      );
+
+      console.log(`✅ Pets resolved and saved to ${outputPath}`);
+      console.timeEnd("Pets worker timer");
+      return output;
+    } catch (err) {
+      console.error("❌ PetWorker failed for logId", job.data.logId, err);
+      throw err;
     }
-
-    const outputDir = path.join(__dirname, "../logs/pets");
-    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-
-    const outputPath = path.join(outputDir, `pets-log-${logId}.json`);
-    fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
-
-    console.log(`✅ Pets resolved and saved to ${outputPath}`);
-    return output;
   },
   {
-    connection: { host: "localhost", port: 6379 }, // adjust as needed
+    connection: redisConnection,
+    lockDuration: 300000,
+    stalledInterval: 60000,
+    maxStalledCount: 2,
   }
 );
 
@@ -291,4 +325,4 @@ petWorker.on("failed", (job, err) =>
   console.error(`❌ PetWorker failed for logId ${job?.data?.logId}`, err)
 );
 
-console.log("Pets worker started....");
+console.log("🐾 Pets worker started...");

@@ -6,3 +6,6 @@ server/logs/pets/
 server/logs/pets/*
 server/logs/segments/
 server/logs/segments/*
+server/tmp/*
+server/go-log-executables
+server/go-log-executables/*

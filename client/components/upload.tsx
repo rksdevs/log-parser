@@ -135,7 +135,7 @@ export function Upload() {
       );
 
       toast("Log Instance Selected", {
-        description: "Log Instance - ${selectedIndex} is sent to save in DB",
+        description: `Log Instance - ${selectedIndex} is sent to save in DB`,
       });
       setIsSelectingInstance(false);
       setInstanceNames([]);

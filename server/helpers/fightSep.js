@@ -78,7 +78,7 @@ function splitToAttempts(logLines, playerStats, allGuids, petOwners) {
     if (!currentAttempt[bossName]) currentAttempt[bossName] = [];
     if (!lastTimestamp[bossName]) lastTimestamp[bossName] = null;
 
-    // Detect wipes or fight reset
+    // Detect wipes or fight reset need to add lichking specificity referencing fury of frostmourne since this also adds a separation time might be more than 30 second but actually its not a wipe, but a kill (so if the 30 second separation happens after fury of frostmourne we can consider it as a kill)
     if (
       lastTimestamp[bossName] &&
       timeInMs - lastTimestamp[bossName] > MAX_GAP
@@ -186,8 +186,8 @@ function processAttempt(
     .substring(0, 19)}`;
 
   //validate attempts, if attempts are less than 30 seconds invalidate them
-  //edge case - what if the encounter itself is less than 30 seconds, that is boss died - Need to work
-  //edge case - what if the encounter ended due to wipe in 30 seconds, boss didnt die - Need to work
+  //edge case - what if the encounter itself is less than 30 seconds, that is boss died - Need to work later
+  //edge case - what if the encounter ended due to wipe in 30 seconds, boss didnt die - Need to work later
   if ((new Date(endTime) - new Date(startTime)) / 1000 <= 30) {
     //this is an invalid attempt
     // console.log("This is an invalid attempt");

@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "log-worker",
-      script: "./workers/logWorker.js",
+      script: "./workers/logWorkerV4.js",
     },
     {
       name: "damage-heal-worker",
@@ -14,7 +14,7 @@ module.exports = {
     },
     {
       name: "merge-worker",
-      script: "./workers/mergeWorker.js",
+      script: "./workers/mergeWorkerV4.js",
     },
     {
       name: "postgres-worker",

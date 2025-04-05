@@ -15,6 +15,12 @@ import attemptRoutes from "./routes/attemptsRoute.js";
 import playerRoutes from "./routes/playersRoute.js";
 import spellRoutes from "./routes/spellsRoute.js";
 import selectInstance from "./routes/selectInstanceRoute.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 const app = express();
@@ -48,6 +54,23 @@ app.get("/", (req, res) => {
 //Routes
 app.use("/api", getPresignedUrl);
 app.use("/api/upload-logs", uploadMetadata);
+app.get("/api/logs/full-timeline", (req, res) => {
+  const filePath = path.join(
+    __dirname,
+    "./logs/timelines/timeline-292-attempt-2025-02-19_17_46_35.json"
+  );
+  fs.readFile(filePath, "utf8", (err, data) => {
+    if (err) return res.status(500).json({ error: "File read failed" });
+    res.json(JSON.parse(data));
+  });
+});
+// app.get("/api/logs/full-timeline", (req, res) => {
+//   const filePath = path.join(__dirname, "./logs/timelines/timeline-full.json");
+//   fs.readFile(filePath, "utf8", (err, data) => {
+//     if (err) return res.status(500).json({ error: "File read failed" });
+//     res.json(JSON.parse(data));
+//   });
+// });
 app.use("/api/logs", getLogs);
 app.use("/api/logs", logStatusRoutes);
 app.use("/api/logs", attemptRoutes);
