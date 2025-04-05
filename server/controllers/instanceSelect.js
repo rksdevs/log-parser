@@ -77,6 +77,13 @@ export const selectLogInstance = async (req, res) => {
       `go-attempts-log-${logId}.json`
     );
 
+    // 🚀 Start pet job early (independent of attempts)
+    const petJob = await petQueue.add("parse-pets", {
+      logId,
+      filePath: slicedPath,
+    });
+
+    // 🧠 Segment attempts (needed only for damage/healing)
     try {
       await generateAttemptSegments(slicedPath, logId, attemptsPath);
     } catch (err) {
@@ -84,20 +91,17 @@ export const selectLogInstance = async (req, res) => {
       return res.status(500).json({ error: "Attempt segmentation failed" });
     }
 
-    // 🚀 Launch workers
+    // 🛠 Launch damage/heal job after segmentation is done
     const damageHealJob = await damageHealQueue.add("parse-damage-heal", {
       logId,
       attemptsPath,
     });
 
-    const petJob = await petQueue.add("parse-pets", {
-      logId,
-      filePath: slicedPath,
-    });
-
-    // ⏳ Wait for structured fights output
-    await damageHealJob.waitUntilFinished(damageHealQueueEvents);
-    await petJob.waitUntilFinished(petQueueEvents);
+    // ⏳ Wait for both to finish in parallel
+    await Promise.all([
+      damageHealJob.waitUntilFinished(damageHealQueueEvents),
+      petJob.waitUntilFinished(petQueueEvents),
+    ]);
 
     const structuredPath = path.join(
       __dirname,
