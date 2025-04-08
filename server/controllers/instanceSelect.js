@@ -10,6 +10,7 @@ import {
 } from "../queues/damageHealQueue.js";
 import { petQueue, petQueueEvents } from "../queues/petQueue.js";
 import { mergeQueue } from "../queues/mergeQueue.js";
+import { healQueue, healQueueEvents } from "../queues/healingQueue.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,7 +75,7 @@ export const selectLogInstance = async (req, res) => {
       "..",
       "logs",
       "segments",
-      `go-attempts-log-${logId}.json`
+      `attempts-log-${logId}.json`
     );
 
     // 🚀 Start pet job early (independent of attempts)
@@ -92,18 +93,32 @@ export const selectLogInstance = async (req, res) => {
     }
 
     // 🛠 Launch damage/heal job after segmentation is done
-    const damageHealJob = await damageHealQueue.add("parse-damage-heal", {
+    const damageJob = await damageHealQueue.add("parse-damage-heal", {
       logId,
       attemptsPath,
     });
 
-    // ⏳ Wait for both to finish in parallel
+    const healJob = await healQueue.add("parse-heal", {
+      logId,
+      attemptsPath,
+    });
+
+    // ⏳ Wait for all jobs to finish in parallel
     await Promise.all([
-      damageHealJob.waitUntilFinished(damageHealQueueEvents),
+      damageJob.waitUntilFinished(damageHealQueueEvents),
       petJob.waitUntilFinished(petQueueEvents),
+      healJob.waitUntilFinished(healQueueEvents),
     ]);
 
-    const structuredPath = path.join(
+    // const structuredPath = path.join(
+    //   __dirname,
+    //   "..",
+    //   "logs",
+    //   "json",
+    //   `log-${logId}-parsed.json`
+    // );
+
+    const damagePath = path.join(
       __dirname,
       "..",
       "logs",
@@ -111,27 +126,55 @@ export const selectLogInstance = async (req, res) => {
       `log-${logId}-parsed.json`
     );
 
-    if (!fs.existsSync(structuredPath)) {
-      return res.status(404).json({ error: "Structured data file missing" });
+    const healPath = path.join(
+      __dirname,
+      "..",
+      "logs",
+      "heal",
+      `heal-log-${logId}.json`
+    );
+
+    if (!fs.existsSync(damagePath)) {
+      return res.status(404).json({ error: "Damage data file missing" });
     }
 
-    const structuredFights = JSON.parse(
-      fs.readFileSync(structuredPath, "utf-8")
-    )?.[0]?.fights;
+    if (!fs.existsSync(healPath)) {
+      return res.status(404).json({ error: "Heal data file missing" });
+    }
 
-    const encounterStartTime = JSON.parse(
-      fs.readFileSync(structuredPath, "utf-8")
-    )?.[0]?.encounterStartTime;
+    const damageJson = JSON.parse(fs.readFileSync(damagePath, "utf-8"));
+    const healJson = JSON.parse(fs.readFileSync(healPath, "utf-8"));
 
-    if (!structuredFights) {
-      return res.status(404).json({ error: "No structured fights found" });
+    const structuredFightsFromDamage = damageJson?.[0]?.fights;
+    const structuredFightsFromHeal = healJson?.[0]?.fights;
+
+    const encounterStartTimeDamage = damageJson?.[0]?.encounterStartTime;
+    const encounterStartTimeHeal = healJson?.[0]?.encounterStartTime;
+
+    if (!structuredFightsFromDamage) {
+      return res
+        .status(404)
+        .json({ error: "No structured fights from damage output were found" });
+    }
+
+    if (!structuredFightsFromHeal) {
+      return res
+        .status(404)
+        .json({ error: "No structured fights from heal output were found" });
+    }
+
+    if (encounterStartTimeDamage !== encounterStartTimeHeal) {
+      return res.status(404).json({
+        error: "Encounter start time mismatch between damage and heal",
+      });
     }
 
     // 🐾 Merge pets + send to DB
     await mergeQueue.add("merge-worker", {
       logId,
-      structuredFights,
-      selectedInstanceTime: encounterStartTime,
+      damageFights: structuredFightsFromDamage,
+      healFights: structuredFightsFromHeal,
+      selectedInstanceTime: encounterStartTimeDamage || encounterStartTimeHeal,
     });
 
     await prisma.logs.update({

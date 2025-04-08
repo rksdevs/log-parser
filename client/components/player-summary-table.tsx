@@ -27,7 +27,13 @@ import {
   ChevronsRightIcon,
 } from "lucide-react";
 import { useNavigation } from "@/context/NavigationContext";
-import { Card, CardContent, CardFooter } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 import { Label } from "./ui/label";
 import {
   Select,
@@ -37,6 +43,8 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Button } from "./ui/button";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 interface PlayerStats {
   playerName: string;
@@ -48,6 +56,9 @@ interface PlayerStats {
   hps: string;
   damageRatio?: number;
   damagePercent?: number;
+  criticalRating?: number;
+  deaths?: number;
+  activity?: number;
 }
 
 const CLASS_COLORS: Record<string, string> = {
@@ -69,6 +80,7 @@ const CLASS_COLORS: Record<string, string> = {
 
 export default function PlayerSummaryTable() {
   const { logSummary } = useNavigation();
+  const { logId } = useParams();
   const [allPlayersData, setAllPlayersData] = useState<PlayerStats[]>([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -107,21 +119,25 @@ export default function PlayerSummaryTable() {
       id: "Player",
       header: "Actor Name",
       cell: ({ row }) => (
-        <div className="flex items-center gap-2 max-w-[200px]">
-          <Image
-            src={
-              row.original.class === "Unknown"
-                ? "/icons/inv_misc_questionmark.png"
-                : `/icons/classes/${row.original.class}.jpg`
-            }
-            alt={row.original.playerName}
-            className="w-6 h-6 rounded shrink-0"
-            width={24}
-            height={24}
-            unoptimized
-          />
-          <span className="truncate">{row.original.playerName}</span>
-        </div>
+        <Link
+          href={`/${logId}/player/${row.original.playerName}?class=${row.original.class}`}
+        >
+          <div className="flex items-center gap-2 max-w-[200px]">
+            <Image
+              src={
+                row.original.class === "Unknown"
+                  ? "/icons/inv_misc_questionmark.png"
+                  : `/icons/classes/${row.original.class}.jpg`
+              }
+              alt={row.original.playerName}
+              className="w-6 h-6 rounded shrink-0"
+              width={24}
+              height={24}
+              unoptimized
+            />
+            <span className="truncate">{row.original.playerName}</span>
+          </div>
+        </Link>
       ),
       meta: { className: "w-[150px]" },
     }),
@@ -205,6 +221,9 @@ export default function PlayerSummaryTable() {
 
   return (
     <Card>
+      <CardHeader>
+        <CardTitle>Player damage for Log-{logId}</CardTitle>
+      </CardHeader>
       <CardContent>
         <div className="rounded-lg border overflow-hidden">
           <Table className="table-fixed w-full">

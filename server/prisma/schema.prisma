@@ -67,41 +67,6 @@ model Boss {
   attempts    Attempt[]
 }
 
-// model Attempt {
-//   id                 String               @id
-//   boss               Boss                 @relation(fields: [bossId], references: [id])
-//   bossId             String
-//   startTime          DateTime
-//   endTime            DateTime
-//   overallDamage      Int
-//   overallHealing     Int
-//   damageByActors     Json
-//   healingByActors    Json
-//   allActors          AllActor[]
-//   logs               Log[]
-//   spellStats         SpellStatistic[]
-//   AttemptParticipant AttemptParticipant[]
-// }
-
-//name type addition
-// model Attempt {
-//   id                 String               @id
-//   boss               Boss                 @relation(fields: [bossId], references: [id])
-//   bossId             String
-//   name               String? // e.g. "Gormok (kill)"
-//   type               AttemptType? // New field: kill/wipe
-//   startTime          DateTime
-//   endTime            DateTime
-//   overallDamage      Int
-//   overallHealing     Int
-//   damageByActors     Json
-//   healingByActors    Json
-//   allActors          AllActor[]
-//   logs               Log[]
-//   spellStats         SpellStatistic[]
-//   AttemptParticipant AttemptParticipant[]
-// }
-
 //v3 - architechture change
 model Attempt {
   id        String       @id
@@ -128,18 +93,32 @@ model Attempt {
   AttemptParticipant AttemptParticipant[]
 }
 
+// model AllActor {
+//   id        Int     @id @default(autoincrement())
+//   attempt   Attempt @relation(fields: [attemptId], references: [id])
+//   attemptId String
+//   actorName String
+//   // class            String
+//   // actorDamage      Int
+//   // actorTotalDamage Int
+//   // healing          Int
+//   // pets             String[] @default([])
+//   // spellList        Json
+//   data      Json
+// }
+
 model AllActor {
-  id        Int     @id @default(autoincrement())
-  attempt   Attempt @relation(fields: [attemptId], references: [id])
-  attemptId String
-  actorName String
-  // class            String
-  // actorDamage      Int
-  // actorTotalDamage Int
-  // healing          Int
-  // pets             String[] @default([])
-  // spellList        Json
-  data      Json
+  id               Int      @id @default(autoincrement())
+  attempt          Attempt  @relation(fields: [attemptId], references: [id])
+  attemptId        String
+  actorName        String
+  class            String? // Optional - for querying/filtering
+  actorDamage      Int? // Optional - raw damage
+  actorTotalDamage Int? // Optional - damage including pets
+  healing          Int? // Optional - total healing
+  pets             String[] @default([]) // Optional - pet names
+  spellList        Json? // Optional - new detailed structure
+  data             Json? // Still keep this
 }
 
 model Log {

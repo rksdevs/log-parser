@@ -11,8 +11,11 @@ async function processLogFile(attemptsFilePath, logId, rawLogPath = null) {
   console.time("✅ Damage/heal parsing function from json timer: ");
   const logInstances = JSON.parse(fs.readFileSync(attemptsFilePath, "utf8"));
 
+  // const txtPath =
+  //   rawLogPath || path.join(__dirname, `../tmp/log-372-instance.txt`);
+
   const txtPath =
-    rawLogPath || path.join(__dirname, `../tmp/log-${logId}/WoWCombatLog.txt`);
+    rawLogPath || path.join(__dirname, `../tmp/log-${logId}-instance.txt`);
   const rawLines = fs.readFileSync(txtPath, "utf8").split("\n");
 
   const structuredFightsArray = [];
@@ -170,6 +173,6 @@ async function processLogFile(attemptsFilePath, logId, rawLogPath = null) {
   return structuredFightsArray;
 }
 
-// processLogFile("../server/logs/segments/attempts-log-301.json", 323);
+// processLogFile("../server/logs/segments/go-attempts-log-372.json", 472);
 
 export { processLogFile };

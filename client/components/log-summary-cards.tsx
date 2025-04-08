@@ -9,6 +9,7 @@ import {
 } from "./ui/card";
 import { formatDuration } from "@/lib/utils";
 import { TopsChart } from "./tops-chart";
+import { HealingBarChart } from "./tops-heal-chart";
 
 const LogSummaryCards = () => {
   const { logSummary } = useNavigation();
@@ -58,14 +59,14 @@ const LogSummaryCards = () => {
       </Card>
       <Card className="flex col-span-1">
         <CardHeader>
-          <CardDescription>Performance Insights</CardDescription>
-          <CardTitle className="font-semibold">Top Performers</CardTitle>
+          <CardDescription>Dps Pumpers</CardDescription>
+          {/* <CardTitle className="font-semibold">Top Performers</CardTitle> */}
         </CardHeader>
         <CardContent>
           <TopsChart />
         </CardContent>
       </Card>
-      <Card className="flex col-span-1">
+      {/* <Card className="flex col-span-1">
         <CardHeader>
           <CardDescription>Special Insights</CardDescription>
           <CardTitle className="font-semibold">Highlights</CardTitle>
@@ -113,6 +114,17 @@ const LogSummaryCards = () => {
             </CardContent>
           </Card>
         </CardFooter>
+      </Card> */}
+      <Card className="flex col-span-1 gap-2">
+        <CardHeader>
+          <CardDescription>
+            Heal Pumpers - Sorry Disc Preists - Absorb is WIP
+          </CardDescription>
+          {/* <CardTitle className="font-semibold">Top Performers</CardTitle> */}
+        </CardHeader>
+        <CardContent>
+          <HealingBarChart />
+        </CardContent>
       </Card>
     </div>
   );

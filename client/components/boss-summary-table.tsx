@@ -27,7 +27,13 @@ import {
   ChevronsRightIcon,
 } from "lucide-react";
 import { useNavigation } from "@/context/NavigationContext";
-import { Card, CardContent, CardFooter } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 import { Label } from "./ui/label";
 import {
   Select,
@@ -37,6 +43,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Button } from "./ui/button";
+import { useParams } from "next/navigation";
 
 interface PlayerStats {
   playerName: string;
@@ -69,6 +76,7 @@ const CLASS_COLORS: Record<string, string> = {
 
 export default function BossSummaryTable() {
   const { logSummary } = useNavigation();
+  const { logId } = useParams();
   const [allBossesData, setAllBossesData] = useState<PlayerStats[]>([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -202,6 +210,9 @@ export default function BossSummaryTable() {
 
   return (
     <Card>
+      <CardHeader>
+        <CardTitle>Boss damage for Log-{logId}</CardTitle>
+      </CardHeader>
       <CardContent>
         <div className="rounded-lg border overflow-hidden">
           <Table className="table-fixed w-full">

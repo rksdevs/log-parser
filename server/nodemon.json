@@ -3,7 +3,15 @@
     "server/tmp/*",
     "server/logs/*",
     "server/tmp/cached-instances/*",
-    "server/tmp/*"
+    "server/tmp/*",
+    "server/logs/heal/*",
+    "server/logs/absorb/*",
+    "server/logs/mergesnippet/*",
+    "server/logs/json/*",
+    "server/logs/pets/*",
+    "server/logs/raw-structured/*",
+    "server/logs/segments/*",
+    "server/logs/timelines/*"
   ],
-  "ext": "js,json"
+  "ext": "js,json,txt"
 }

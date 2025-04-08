@@ -7,7 +7,8 @@ import { fileURLToPath } from "url";
 import { redisConnection } from "../config/redis.js";
 import Redis from "ioredis";
 // import { processLogFile } from "../parsers/logParserNew.js";
-import { processLogFile } from "../parsers/logParserV3.js";
+// import { processLogFile } from "../parsers/logParserV3.js";
+import { processDamageLog } from "../parsers/damageParserV1.js";
 
 const __fileName = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__fileName);
@@ -29,7 +30,7 @@ const damageHealWorker = new Worker(
     console.time("Damage heal worker timer");
     publishProgress(logId, "parsing damage and healing", 35);
     console.log(`Damage heal worker initiated for log: ${logId}`);
-    const parsedFights = await processLogFile(attemptsPath, logId);
+    const parsedFights = await processDamageLog(attemptsPath, logId);
     console.log(`✅ Damage heal worker completed for log: ${logId}`);
     console.timeEnd("Damage heal worker timer");
     return parsedFights;

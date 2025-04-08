@@ -1,10 +1,11 @@
-import { SectionCards } from "@/components/section-cards";
+"use client";
+
+import { AttemptProvider } from "@/context/AttemptContext";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex w-full h-full flex-col">
-      <SectionCards />
-      {children}
+      <AttemptProvider>{children}</AttemptProvider>
     </div>
   );
 };

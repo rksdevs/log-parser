@@ -5,7 +5,7 @@ module.exports = {
       script: "./workers/logWorkerV4.js",
     },
     {
-      name: "damage-heal-worker",
+      name: "damage-worker",
       script: "./workers/damageHealWorker.js",
     },
     {
@@ -19,6 +19,10 @@ module.exports = {
     {
       name: "postgres-worker",
       script: "./workers/newPostgresWorker.js",
+    },
+    {
+      name: "heal-worker",
+      script: "./workers/healWorkerV1.js",
     },
   ],
 };

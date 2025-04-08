@@ -49,6 +49,12 @@ export interface AttemptNavItem {
     dpsChartData: {
       player: string;
       value: number;
+      class: string;
+    }[];
+    healingChartData: {
+      player: string;
+      value: number;
+      class: string;
     }[];
     playerStats: {
       playerName: string;
